@@ -46,7 +46,7 @@ accounts, internships, events, applications, resumes and results stay in sync.
 
 ```bash
 flutter pub get
-flutter run
+flutter run --dart-define-from-file=env.json
 ```
 
 The Firebase config is bundled in `lib/firebase_options.dart` (same project as web).
@@ -56,9 +56,16 @@ For production-grade per-platform Firebase apps, optionally run `flutterfire con
 
 The AI features call Groq directly from the device. Provide a key either way:
 
-1. **In-app** — open the drawer → *AI Settings* → paste your key
-   (free at [console.groq.com](https://console.groq.com)), or
-2. **At build time** — `flutter run --dart-define=GROQ_API_KEY=gsk_...`
+1. **Build time (recommended)** — create an `env.json` next to `pubspec.yaml`
+   (it is gitignored, never commit it):
+
+   ```json
+   { "GROQ_API_KEY": "gsk_..." }
+   ```
+
+   then run/build with `--dart-define-from-file=env.json`.
+2. **In-app** — open the drawer → *AI Settings* → paste your key
+   (free at [console.groq.com](https://console.groq.com)).
 
 ## Tech
 
