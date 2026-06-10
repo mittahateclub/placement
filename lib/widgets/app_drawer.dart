@@ -73,19 +73,15 @@ class AppDrawer extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(18, 18, 18, 6),
               child: Row(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: AppColors.accent.withValues(alpha: 0.25)),
-                    ),
-                    child: Image.asset('assets/logo.png', fit: BoxFit.contain),
+                  Image.asset(
+                    theme.isDark
+                        ? 'assets/logo_dark.png'
+                        : 'assets/logo.png',
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.contain,
                   ),
-                  const SizedBox(width: 11),
+                  const SizedBox(width: 9),
                   Text(
                     'UNISHIP',
                     style: TextStyle(
