@@ -88,18 +88,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Wordmark
+                      // Logo
                       Container(
-                        width: 64,
-                        height: 64,
+                        width: 76,
+                        height: 76,
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.accent.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(18),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                              color: AppColors.accent.withValues(alpha: 0.3)),
+                              color: AppColors.accent.withValues(alpha: 0.25)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.accent.withValues(alpha: 0.18),
+                              blurRadius: 24,
+                              spreadRadius: -4,
+                            ),
+                          ],
                         ),
-                        child: const Icon(Icons.school_rounded,
-                            color: AppColors.accent, size: 32),
+                        child: Image.asset('assets/logo.png',
+                            fit: BoxFit.contain),
                       ),
                       const SizedBox(height: 16),
                       Text(

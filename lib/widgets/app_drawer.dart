@@ -68,9 +68,40 @@ class AppDrawer extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            // ── Header ──
+            // ── Brand strip ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 6),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: AppColors.accent.withValues(alpha: 0.25)),
+                    ),
+                    child: Image.asset('assets/logo.png', fit: BoxFit.contain),
+                  ),
+                  const SizedBox(width: 11),
+                  Text(
+                    'UNISHIP',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2.5,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            // ── User header ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
               child: Row(
                 children: [
                   CircleAvatar(
