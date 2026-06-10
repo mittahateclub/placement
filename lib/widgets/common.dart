@@ -20,23 +20,44 @@ class SurfaceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final card = Material(
-      color: scheme.surfaceContainer,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: borderColor ?? scheme.outline),
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: isLight
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: scheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: borderColor != null
+                  ? Border.all(color: borderColor!, width: 1.2)
+                  : isLight
+                      ? null
+                      : Border.all(
+                          color: scheme.outline.withValues(alpha: 0.7)),
+            ),
+            child: child,
           ),
-          child: child,
         ),
       ),
     );
-    return card;
   }
 }
 
@@ -101,13 +122,22 @@ class EmptyState extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 56, horizontal: 24),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: scheme.outline),
+        color: scheme.surfaceContainerLow.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 32, color: scheme.onSurface.withValues(alpha: 0.3)),
-          const SizedBox(height: 12),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon,
+                size: 26, color: scheme.onSurface.withValues(alpha: 0.35)),
+          ),
+          const SizedBox(height: 14),
           Text(title,
               textAlign: TextAlign.center,
               style:
@@ -135,11 +165,10 @@ class Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: color.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

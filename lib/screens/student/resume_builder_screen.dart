@@ -7,7 +7,6 @@ import '../../core/app_config.dart';
 import '../../models/resume_data.dart';
 import '../../services/auth_service.dart';
 import '../../services/groq_service.dart';
-import '../../widgets/app_drawer.dart' show showGroqKeySheet;
 import '../../widgets/ats_panel.dart';
 import '../../widgets/common.dart';
 import '../../widgets/loading_dots.dart';
@@ -79,8 +78,10 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
       return;
     }
     if (!AppConfig.hasGroqKey) {
-      await showGroqKeySheet(context);
-      if (!AppConfig.hasGroqKey) return;
+      showAppSnack(context,
+          'AI is not configured in this build. Rebuild with --dart-define-from-file=env.json.',
+          error: true);
+      return;
     }
     setState(() => _generating = true);
     try {

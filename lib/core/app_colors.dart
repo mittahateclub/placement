@@ -1,46 +1,47 @@
 import 'package:flutter/material.dart';
 
-/// Brand palette mirrored from the UniShip web app (globals.css).
+/// The app's own clean palette — soft neutrals with a modern blue accent
+/// (intentionally distinct from the website's black/cyan theme).
 class AppColors {
   AppColors._();
 
   // Accents (shared across themes)
-  static const Color accent = Color(0xFF00A8E1);
-  static const Color accentDeep = Color(0xFF0088BD);
-  static const Color blue = Color(0xFF4B8BBE);
-  static const Color green = Color(0xFF00C16E);
-  static const Color success = Color(0xFF4CAF50);
-  static const Color amber = Color(0xFFF1A82C);
-  static const Color pink = Color(0xFFE04DB0);
-  static const Color danger = Color(0xFFDC2626);
+  static const Color accent = Color(0xFF3B82F6);
+  static const Color accentDeep = Color(0xFF2563EB);
+  static const Color blue = Color(0xFF6366F1);
+  static const Color green = Color(0xFF10B981);
+  static const Color success = Color(0xFF22C55E);
+  static const Color amber = Color(0xFFF59E0B);
+  static const Color pink = Color(0xFFEC4899);
+  static const Color danger = Color(0xFFEF4444);
 
-  // Dark theme
-  static const Color darkBg = Color(0xFF000000);
-  static const Color darkSurface = Color(0xFF151515);
-  static const Color darkElevated = Color(0xFF0A0A0A);
-  static const Color darkBorder = Color(0xFF2C2C2C);
-  static const Color darkBorderActive = Color(0xFF4B4B4B);
-  static const Color darkText = Color(0xFFEEEFE9);
+  // Dark theme — soft slate, not pure black
+  static const Color darkBg = Color(0xFF0E1116);
+  static const Color darkSurface = Color(0xFF171B23);
+  static const Color darkElevated = Color(0xFF1E2430);
+  static const Color darkBorder = Color(0xFF262D3A);
+  static const Color darkBorderActive = Color(0xFF39414F);
+  static const Color darkText = Color(0xFFE9EBEF);
 
-  // Light theme
-  static const Color lightBg = Color(0xFFFFFFFF);
-  static const Color lightSurface = Color(0xFFF5F5F4);
-  static const Color lightElevated = Color(0xFFFAFAF9);
-  static const Color lightBorder = Color(0xFFE7E5E4);
-  static const Color lightBorderActive = Color(0xFFD6D3D1);
-  static const Color lightText = Color(0xFF1C1917);
+  // Light theme — airy off-white with white cards
+  static const Color lightBg = Color(0xFFF6F7F9);
+  static const Color lightSurface = Color(0xFFFFFFFF);
+  static const Color lightElevated = Color(0xFFF1F3F6);
+  static const Color lightBorder = Color(0xFFE6E9EE);
+  static const Color lightBorderActive = Color(0xFFD2D7DF);
+  static const Color lightText = Color(0xFF171A20);
 
   /// Event-type colors used across College Space / Calendar.
   static const Map<String, Color> eventTypeColors = {
-    'event': blue,
-    'internship': green,
-    'hackathon': accent,
-    'research': amber,
-    'workshop': pink,
+    'event': Color(0xFF6366F1),
+    'internship': Color(0xFF10B981),
+    'hackathon': Color(0xFF06B6D4),
+    'research': Color(0xFFF59E0B),
+    'workshop': Color(0xFFEC4899),
   };
 
   static Color eventTypeColor(String type) =>
-      eventTypeColors[type] ?? blue;
+      eventTypeColors[type] ?? eventTypeColors['event']!;
 
   static String eventTypeLabel(String type) {
     switch (type) {

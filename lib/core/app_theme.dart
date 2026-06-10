@@ -73,9 +73,9 @@ class AppTheme {
         elevation: 0,
         centerTitle: false,
         titleTextStyle: GoogleFonts.inter(
-          fontSize: 17,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.3,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.4,
           color: text,
         ),
         iconTheme: IconThemeData(color: text),
@@ -86,20 +86,22 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: border),
+          borderRadius: BorderRadius.circular(18),
         ),
       ),
       dividerTheme: DividerThemeData(color: border, thickness: 1, space: 1),
       drawerTheme: DrawerThemeData(
-        backgroundColor: elevated,
+        backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: elevated,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: TextStyle(
           color: text.withValues(alpha: 0.32),
           fontSize: 13.5,
@@ -107,45 +109,49 @@ class AppTheme {
         ),
         labelStyle: TextStyle(color: text.withValues(alpha: 0.5), fontSize: 13.5),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: border),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: border),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.blue, width: 1.4),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: accent, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.danger),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.danger, width: 1.5),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: accent,
           foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(48),
+          minimumSize: const Size.fromHeight(52),
           textStyle: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(15),
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: text,
-          side: BorderSide(color: border),
-          minimumSize: const Size.fromHeight(44),
+          side: BorderSide(color: border, width: 1.2),
+          minimumSize: const Size.fromHeight(48),
           textStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
       ),
@@ -153,43 +159,45 @@ class AppTheme {
         style: TextButton.styleFrom(
           foregroundColor: accent,
           textStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: elevated,
-        side: BorderSide(color: border),
+        side: BorderSide.none,
         labelStyle: TextStyle(fontSize: 11, color: text.withValues(alpha: 0.7)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: brightness == Brightness.dark
-            ? AppColors.darkSurface
+            ? AppColors.darkElevated
             : AppColors.lightText,
         contentTextStyle: GoogleFonts.inter(
           fontSize: 13,
           color: brightness == Brightness.dark ? text : Colors.white,
         ),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
         ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: BorderSide(color: border),
+          borderRadius: BorderRadius.circular(22),
         ),
       ),
       listTileTheme: ListTileThemeData(
         iconColor: text.withValues(alpha: 0.6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: accent,
@@ -205,8 +213,16 @@ class AppTheme {
         unselectedLabelStyle:
             GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500),
       ),
-      switchTheme: SwitchThemeData(
-        trackOutlineColor: WidgetStatePropertyAll(border),
+      switchTheme: const SwitchThemeData(
+        trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: accent,
+        foregroundColor: Colors.white,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
       ),
     );
   }

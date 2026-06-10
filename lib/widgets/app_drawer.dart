@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_colors.dart';
-import '../core/app_config.dart';
 import '../core/theme_controller.dart';
 import '../screens/home_shell.dart';
 import '../services/auth_service.dart';
@@ -190,11 +189,6 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   _DrawerTile(
-                    icon: Icons.key_outlined,
-                    label: 'AI Settings',
-                    onTap: () => showGroqKeySheet(context),
-                  ),
-                  _DrawerTile(
                     icon: Icons.logout_rounded,
                     label: 'Logout',
                     danger: true,
@@ -281,61 +275,3 @@ class _DrawerTile extends StatelessWidget {
   }
 }
 
-/// Bottom sheet to paste/update the Groq API key that powers AI features.
-Future<void> showGroqKeySheet(BuildContext context) async {
-  final controller = TextEditingController(text: AppConfig.groqApiKey);
-  await showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    builder: (sheetContext) => Padding(
-      padding: EdgeInsets.fromLTRB(
-          20, 20, 20, MediaQuery.of(sheetContext).viewInsets.bottom + 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.auto_awesome_outlined,
-                  size: 18, color: AppColors.accent),
-              SizedBox(width: 8),
-              Text('AI Settings',
-                  style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'The AI Resume Builder uses Groq (Llama 3.3 70B). Paste a Groq API '
-            'key — it is stored only on this device. Get a free key at '
-            'console.groq.com.',
-            style: TextStyle(
-                fontSize: 12.5,
-                color: Theme.of(sheetContext)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.55)),
-          ),
-          const SizedBox(height: 16),
-          const FieldLabel('Groq API Key'),
-          TextField(
-            controller: controller,
-            obscureText: true,
-            decoration: const InputDecoration(hintText: 'gsk_...'),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () async {
-              await AppConfig.setGroqApiKey(controller.text);
-              if (sheetContext.mounted) {
-                Navigator.pop(sheetContext);
-                showAppSnack(sheetContext, 'AI settings saved');
-              }
-            },
-            child: const Text('SAVE'),
-          ),
-        ],
-      ),
-    ),
-  );
-}
