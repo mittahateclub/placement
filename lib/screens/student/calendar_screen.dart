@@ -8,6 +8,7 @@ import '../../core/format.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common.dart';
 import '../../widgets/loading_dots.dart';
+import 'college_space_screen.dart';
 
 class _CalEvent {
   final String id;
@@ -18,6 +19,11 @@ class _CalEvent {
   final String? location;
   final String? company;
 
+  /// Original event/internship id + source from the saved bookmark, so a
+  /// tap can jump to the listing in College Space.
+  final String? eventId;
+  final String source;
+
   _CalEvent({
     required this.id,
     required this.title,
@@ -26,13 +32,16 @@ class _CalEvent {
     required this.description,
     this.location,
     this.company,
+    this.eventId,
+    this.source = 'event',
   });
 }
 
 /// Month calendar of the student's saved events (bookmarks become
 /// calendar entries — same model as the website).
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({super.key});
+  final void Function(String id)? onNavigate;
+  const CalendarScreen({super.key, this.onNavigate});
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -70,6 +79,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           description: (data['description'] as String?) ?? '',
           location: data['location'] as String?,
           company: data['companyName'] as String?,
+          eventId: data['eventId'] as String?,
+          source: (data['source'] as String?) ?? 'event',
         );
       }).toList();
       if (mounted) {
@@ -86,6 +97,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
   List<_CalEvent> _eventsOn(DateTime date) => _events
       .where((e) => e.date != null && sameDay(e.date!, date))
       .toList();
+
+  /// Jump to the listing in College Space (events get pinned + highlighted
+  /// there via [CollegeSpaceFocus]).
+  void _openInCollegeSpace(_CalEvent e) {
+    if (widget.onNavigate == null) return;
+    if (e.source == 'event' && e.eventId != null) {
+      CollegeSpaceFocus.eventId = e.eventId;
+    }
+    widget.onNavigate!('college');
+  }
 
   List<_CalEvent> get _upcoming {
     final now = DateTime.now();
@@ -271,7 +292,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             fontSize: 12.5,
                             color: scheme.onSurface.withValues(alpha: 0.4)))
                   else
-                    ...selectedEvents.map((e) => _EventTile(event: e)),
+                    ...selectedEvents.map((e) => InkWell(
+                          onTap: () => _openInCollegeSpace(e),
+                          borderRadius: BorderRadius.circular(10),
+                          child: _EventTile(event: e),
+                        )),
                 ],
               ),
             ),
@@ -291,11 +316,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: SurfaceCard(
                     padding: const EdgeInsets.all(12),
-                    onTap: () => setState(() {
-                      _currentMonth =
-                          DateTime(e.date!.year, e.date!.month, 1);
-                      _selectedDate = e.date;
-                    }),
+                    onTap: () => _openInCollegeSpace(e),
                     child: _EventTile(event: e, compact: true),
                   ),
                 )),

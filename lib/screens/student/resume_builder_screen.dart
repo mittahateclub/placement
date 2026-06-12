@@ -12,6 +12,26 @@ import '../../widgets/common.dart';
 import '../../widgets/loading_dots.dart';
 import '../../widgets/resume_preview.dart';
 
+/// One-shot handoff into the Resume Builder tab: event cards set the target
+/// company + JD here before navigating, and the builder consumes it on open.
+class ResumePrefill {
+  static String? company;
+  static String? jobDescription;
+
+  static void set({String? company, String? jobDescription}) {
+    ResumePrefill.company = company;
+    ResumePrefill.jobDescription = jobDescription;
+  }
+
+  static bool get isSet =>
+      (company?.isNotEmpty ?? false) || (jobDescription?.isNotEmpty ?? false);
+
+  static void clear() {
+    company = null;
+    jobDescription = null;
+  }
+}
+
 /// AI Resume Builder — pulls the student profile, tailors it against a job
 /// description with Groq, shows ATS score + live preview, saves to Firestore.
 class ResumeBuilderScreen extends StatefulWidget {
@@ -36,6 +56,11 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
   @override
   void initState() {
     super.initState();
+    if (ResumePrefill.isSet) {
+      _company.text = ResumePrefill.company ?? '';
+      _jobDescription.text = ResumePrefill.jobDescription ?? '';
+      ResumePrefill.clear();
+    }
     _fetch();
   }
 

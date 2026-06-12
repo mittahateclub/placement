@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/student_filters.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common.dart';
 import '../../widgets/loading_dots.dart';
@@ -40,6 +41,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _github = TextEditingController();
   final _skills = TextEditingController();
   final _coursework = TextEditingController();
+
+  /// Branch / department — used by admins to target events.
+  String? _branch;
 
   // Structured entries — stored as mutable maps matching the web field names.
   List<Map<String, String>> _education = [];
@@ -89,6 +93,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _skills.text = (d['technicalSkills'] as String?) ?? '';
       _coursework.text = (d['relevantCoursework'] as String?) ?? '';
       _photoUrl = d['photoURL'] as String?;
+      final branch = d['branch'] as String?;
+      _branch = kBranches.contains(branch) ? branch : null;
       _education = _entries(d['educationEntries']);
       _experience = _entries(d['experienceEntries']);
       _projects = _entries(d['projectEntries']);
@@ -172,6 +178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await _db.collection('users').doc(user.uid).update({
         'name': _name.text.trim(),
         'rollNumber': _rollNumber.text.trim(),
+        'branch': _branch,
         'phone': _phone.text.trim(),
         'email': _email.text.trim(),
         'title': _title.text.trim(),
@@ -346,6 +353,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _SectionCard(title: 'Personal Details', children: [
           _field('Full Name', _name),
           _field('Roll Number', _rollNumber),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const FieldLabel('Branch / Department'),
+                DropdownButtonFormField<String?>(
+                  initialValue: _branch,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Not set',
+                          style: TextStyle(fontSize: 13.5)),
+                    ),
+                    for (final b in kBranches)
+                      DropdownMenuItem<String?>(
+                        value: b,
+                        child:
+                            Text(b, style: const TextStyle(fontSize: 13.5)),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _branch = v),
+                ),
+              ],
+            ),
+          ),
           _field('Phone Number', _phone, keyboard: TextInputType.phone),
           _field('Contact Email', _email, keyboard: TextInputType.emailAddress),
           _field('Professional Title', _title,

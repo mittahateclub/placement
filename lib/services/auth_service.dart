@@ -5,6 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 
+import '../core/app_config.dart';
+import '../core/student_filters.dart';
+
 /// Mirrors the web app's AuthContext: Firebase Auth session + the
 /// `users/{uid}` profile document (role, university, name, photo).
 class AuthService extends ChangeNotifier {
@@ -19,6 +22,10 @@ class AuthService extends ChangeNotifier {
   String? universityName;
   String? userName;
   String? userPhotoUrl;
+
+  /// Student targeting data (used to filter events client-side).
+  String? branch;
+  double? gpa;
   bool loading = true;
 
   bool get isStudent => role == 'student' || role == 'user' || role == null;
@@ -33,6 +40,9 @@ class AuthService extends ChangeNotifier {
     user = firebaseUser;
     if (firebaseUser != null) {
       await refreshProfile();
+      // Share the Groq key via Firestore so installs built without
+      // --dart-define still get it (and seed it from ones that have it).
+      unawaited(AppConfig.syncRemoteKey());
     } else {
       role = null;
       universityId = null;
@@ -56,6 +66,8 @@ class AuthService extends ChangeNotifier {
       universityName = data?['universityName'] as String?;
       userName = data?['name'] as String?;
       userPhotoUrl = data?['photoURL'] as String?;
+      branch = data?['branch'] as String?;
+      gpa = data == null ? null : cgpaFromProfile(data);
     } catch (_) {
       role = 'student';
     }

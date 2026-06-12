@@ -6,6 +6,7 @@ import '../widgets/app_drawer.dart';
 import '../widgets/bottom_nav.dart';
 import 'student/applications_screen.dart';
 import 'student/calendar_screen.dart';
+import 'student/chat_screen.dart';
 import 'student/college_space_screen.dart';
 import 'student/my_resumes_screen.dart';
 import 'student/profile_screen.dart';
@@ -20,6 +21,7 @@ import 'superadmin/universities_screen.dart';
 import 'uniadmin/admin_profile_screen.dart';
 import 'uniadmin/create_account_screen.dart';
 import 'uniadmin/events_screen.dart';
+import 'uniadmin/inbox_screen.dart';
 import 'uniadmin/student_database_screen.dart';
 import 'uniadmin/tests_screen.dart';
 import 'uniadmin/uniadmin_dashboard.dart';
@@ -67,8 +69,8 @@ class _HomeShellState extends State<HomeShell> {
             id: 'dashboard',
             label: 'Dashboard',
             shortLabel: 'Home',
-            icon: Icons.space_dashboard_outlined,
-            activeIcon: Icons.space_dashboard_rounded,
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home_rounded,
             build: (nav) => SuperadminDashboard(onNavigate: nav)),
         AppPage(
             id: 'universities',
@@ -81,20 +83,20 @@ class _HomeShellState extends State<HomeShell> {
             id: 'manage-students',
             label: 'Manage Students',
             shortLabel: 'Students',
-            icon: Icons.groups_outlined,
-            activeIcon: Icons.groups_rounded,
+            icon: Icons.group_outlined,
+            activeIcon: Icons.group_rounded,
             build: (_) => const ManageStudentsScreen()),
         AppPage(
             id: 'create-uniadmin',
             label: 'Create Admin',
-            icon: Icons.person_add_alt_outlined,
+            icon: Icons.person_add_outlined,
             build: (_) => const CreateUniadminScreen()),
         AppPage(
             id: 'manage-uniadmins',
             label: 'Manage Admins',
             shortLabel: 'Admins',
-            icon: Icons.admin_panel_settings_outlined,
-            activeIcon: Icons.admin_panel_settings_rounded,
+            icon: Icons.manage_accounts_outlined,
+            activeIcon: Icons.manage_accounts_rounded,
             build: (_) => const ManageUniadminsScreen()),
       ];
     }
@@ -104,8 +106,8 @@ class _HomeShellState extends State<HomeShell> {
             id: 'dashboard',
             label: 'Dashboard',
             shortLabel: 'Home',
-            icon: Icons.space_dashboard_outlined,
-            activeIcon: Icons.space_dashboard_rounded,
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home_rounded,
             group: 'Main',
             build: (nav) => UniadminDashboard(onNavigate: nav)),
         AppPage(
@@ -118,22 +120,30 @@ class _HomeShellState extends State<HomeShell> {
         AppPage(
             id: 'tests',
             label: 'Tests',
-            icon: Icons.fact_check_outlined,
-            activeIcon: Icons.fact_check_rounded,
+            icon: Icons.quiz_outlined,
+            activeIcon: Icons.quiz_rounded,
             group: 'Manage',
             build: (_) => const TestsScreen()),
         AppPage(
+            id: 'inbox',
+            label: 'Support Inbox',
+            shortLabel: 'Inbox',
+            icon: Icons.chat_bubble_outline_rounded,
+            activeIcon: Icons.chat_bubble_rounded,
+            group: 'Manage',
+            build: (_) => const InboxScreen()),
+        AppPage(
             id: 'create-account',
             label: 'Register Student',
-            icon: Icons.person_add_alt_outlined,
+            icon: Icons.person_add_outlined,
             group: 'Admin',
             build: (_) => const CreateAccountScreen()),
         AppPage(
             id: 'students',
             label: 'Student Database',
             shortLabel: 'Students',
-            icon: Icons.storage_outlined,
-            activeIcon: Icons.storage_rounded,
+            icon: Icons.group_outlined,
+            activeIcon: Icons.group_rounded,
             group: 'Admin',
             build: (_) => const StudentDatabaseScreen()),
         AppPage(
@@ -159,24 +169,24 @@ class _HomeShellState extends State<HomeShell> {
           id: 'applications',
           label: 'Applications',
           shortLabel: 'Applied',
-          icon: Icons.assignment_turned_in_outlined,
-          activeIcon: Icons.assignment_turned_in_rounded,
+          icon: Icons.check_circle_outline_rounded,
+          activeIcon: Icons.check_circle_rounded,
           group: 'Main',
           build: (_) => const ApplicationsScreen()),
       AppPage(
           id: 'college',
           label: 'College Space',
           shortLabel: 'College',
-          icon: Icons.business_center_outlined,
-          activeIcon: Icons.business_center_rounded,
+          icon: Icons.school_outlined,
+          activeIcon: Icons.school_rounded,
           group: 'Main',
-          build: (_) => const CollegeSpaceScreen()),
+          build: (nav) => CollegeSpaceScreen(onNavigate: nav)),
       AppPage(
           id: 'resume-builder',
           label: 'AI Resume Builder',
           shortLabel: 'Resume',
-          icon: Icons.auto_awesome_outlined,
-          activeIcon: Icons.auto_awesome_rounded,
+          icon: Icons.description_outlined,
+          activeIcon: Icons.description_rounded,
           group: 'Prepare',
           build: (nav) => ResumeBuilderScreen(onNavigate: nav)),
       AppPage(
@@ -189,19 +199,19 @@ class _HomeShellState extends State<HomeShell> {
       AppPage(
           id: 'calendar',
           label: 'Calendar',
-          icon: Icons.calendar_month_outlined,
+          icon: Icons.calendar_today_outlined,
           group: 'Main',
-          build: (_) => const CalendarScreen()),
+          build: (nav) => CalendarScreen(onNavigate: nav)),
       AppPage(
           id: 'my-resumes',
           label: 'My Resumes',
-          icon: Icons.picture_as_pdf_outlined,
+          icon: Icons.folder_outlined,
           group: 'Prepare',
           build: (nav) => MyResumesScreen(onNavigate: nav)),
       AppPage(
           id: 'results',
           label: 'Results',
-          icon: Icons.insights_outlined,
+          icon: Icons.bar_chart_rounded,
           group: 'Track',
           build: (_) => const ResultsScreen()),
     ];
@@ -246,7 +256,12 @@ class _HomeShellState extends State<HomeShell> {
     return Scaffold(
       appBar: AppBar(
         title: Text(selected.label),
-        actions: const [SizedBox(width: 8)],
+        actions: [
+          if (auth.isStudent) const ChatAppBarButton(),
+          if (auth.isUniAdmin)
+            InboxAppBarButton(onOpen: () => _navigate('inbox')),
+          const SizedBox(width: 4),
+        ],
       ),
       drawer: AppDrawer(
         pages: drawerPages,

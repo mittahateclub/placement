@@ -87,14 +87,19 @@ class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: border),
         ),
       ),
       dividerTheme: DividerThemeData(color: border, thickness: 1, space: 1),
       drawerTheme: DrawerThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
+        shape: RoundedRectangleBorder(
+          borderRadius:
+              const BorderRadius.horizontal(right: Radius.circular(24)),
+          side: brightness == Brightness.dark
+              ? BorderSide(color: border)
+              : BorderSide.none,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -184,8 +189,12 @@ class AppTheme {
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        shape: RoundedRectangleBorder(
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(26)),
+          side: brightness == Brightness.dark
+              ? BorderSide(color: border)
+              : BorderSide.none,
         ),
       ),
       dialogTheme: DialogThemeData(
@@ -193,6 +202,9 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(22),
+          side: brightness == Brightness.dark
+              ? BorderSide(color: border)
+              : BorderSide.none,
         ),
       ),
       listTileTheme: ListTileThemeData(

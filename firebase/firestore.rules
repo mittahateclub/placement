@@ -1,0 +1,371 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- Helper functions ---
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isStudent() {
+      return isAuthenticated() && getUserData().role == 'student';
+    }
+    
+    function isUniversityAdmin() {
+      return isAuthenticated() && getUserData().role == 'university_admin';
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && getUserData().role == 'super_admin';
+    }
+    
+    function belongsToSameUniversity(universityId) {
+      return getUserData().universityId == universityId;
+    }
+
+    // Validate string field length
+    function isValidString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+    
+    // --- Users collection ---
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isSuperAdmin());
+      allow read: if isUniversityAdmin() && belongsToSameUniversity(resource.data.universityId);
+      
+      // Self-creation: allow 'student' and 'university_admin' roles.
+      // 'university_admin' docs are created by the create-uniadmin flow (client-side auth).
+      // 'super_admin' role can NEVER be self-assigned — only set via super_admin update.
+      allow create: if isAuthenticated()
+                    && request.auth.uid == userId
+                    && request.resource.data.role in ['student', 'university_admin']
+                    && request.resource.data.keys().hasAll(['email', 'role'])
+                    && isValidString(request.resource.data.email, 320)
+                    && (!('name' in request.resource.data) || isValidString(request.resource.data.name, 200));
+      
+      // Users can update their own non-sensitive fields
+      allow update: if isAuthenticated() && request.auth.uid == userId && 
+                    !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'universityId', 'universityName']);
+      
+      // Only super admins can change roles, delete users, etc.
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // --- Events collection ---
+    match /events/{eventId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isSuperAdmin() || (
+        isUniversityAdmin() && 
+        request.resource.data.universityId == getUserData().universityId
+      );
+
+      // Admins full updates; Students can ONLY update the 'attendees' field for RSVPing.
+      allow update: if isSuperAdmin() || 
+                    (isUniversityAdmin() && belongsToSameUniversity(resource.data.universityId)) ||
+                    (isAuthenticated() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['attendees']));
+
+      allow delete: if isUniversityAdmin() && belongsToSameUniversity(resource.data.universityId);
+
+      // Comments on event posts (campus feed).
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated()
+                      && request.resource.data.userId == request.auth.uid
+                      && isValidString(request.resource.data.text, 2000);
+        allow update: if false;
+        allow delete: if isAuthenticated() && (
+          resource.data.userId == request.auth.uid ||
+          isUniversityAdmin() || isSuperAdmin()
+        );
+      }
+    }
+
+    // --- Other Collections ---
+    match /pdf_uploads/{uploadId} {
+      allow read: if (isUniversityAdmin() || isSuperAdmin()) && 
+                   belongsToSameUniversity(resource.data.universityId);
+      allow write: if false; 
+    }
+
+    match /generated_tests/{testId} {
+      allow read, update: if (isUniversityAdmin() || isSuperAdmin()) && 
+                            belongsToSameUniversity(resource.data.universityId);
+      allow delete: if isSuperAdmin();
+    }
+
+    match /tests/{testId} {
+      // Students can read approved/published tests from their own university.
+      allow read: if isStudent() &&
+                  (resource.data.approved == true || resource.data.published == true) &&
+                  belongsToSameUniversity(resource.data.universityId);
+
+      // Uni admins and super admins can read tests in-scope.
+      allow read: if isSuperAdmin() ||
+                  (isUniversityAdmin() && belongsToSameUniversity(resource.data.universityId));
+
+      // Uni admins can create tests only for their own university.
+      allow create: if isUniversityAdmin() &&
+                    request.resource.data.universityId == getUserData().universityId &&
+                    request.resource.data.createdBy == request.auth.uid;
+
+      // Uni admins can update/delete tests in their own university.
+      allow update, delete: if isSuperAdmin() ||
+                            (isUniversityAdmin() && belongsToSameUniversity(resource.data.universityId));
+    }
+
+    match /mock_tests/{testId} {
+      // SECURITY: Scoped to same-university students + admins (was: any authenticated user)
+      allow read: if isSuperAdmin()
+                  || (isAuthenticated() && belongsToSameUniversity(resource.data.universityId));
+      allow create, update: if isUniversityAdmin()
+                            && request.resource.data.universityId == getUserData().universityId;
+      allow write: if isSuperAdmin();
+    }
+    
+    match /mock_proctoring_logs/{logId} {
+      allow read: if isUniversityAdmin() || isSuperAdmin();
+      allow write: if isSuperAdmin();
+    }
+    
+    match /testResults/{resultId} {
+      // SECURITY: validate userId matches on create, limit document size
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow create: if isAuthenticated()
+                    && request.auth.uid == request.resource.data.userId
+                    && request.resource.data.keys().hasAll(['userId']);
+      allow read: if isUniversityAdmin() || isSuperAdmin();
+      allow update, delete: if false;
+    }
+
+    match /test_results/{resultId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow create: if isAuthenticated()
+                    && request.auth.uid == request.resource.data.userId
+                    && request.resource.data.keys().hasAll(['userId']);
+      allow read: if isUniversityAdmin() || isSuperAdmin();
+      allow delete: if isUniversityAdmin() && belongsToSameUniversity(resource.data.universityId);
+    }
+    
+    match /universities/{universityId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isSuperAdmin();
+    }
+    
+    match /analytics/{analyticsId} {
+      allow read: if isUniversityAdmin() || isSuperAdmin();
+      allow write: if false;
+    }
+
+    // --- Resumes collection ---
+    match /resumes/{resumeId} {
+      // Owners can create resumes tagged to their own uid/email.
+      allow create: if isAuthenticated() && (
+                      request.resource.data.userId == request.auth.uid ||
+                      (request.auth.token.email != null && request.resource.data.userEmail == request.auth.token.email)
+                    );
+
+      // Owners can read/update/delete their own resumes by uid or email mapping.
+      allow read, update, delete: if isAuthenticated() && (
+                                  resource.data.userId == request.auth.uid ||
+                                  (request.auth.token.email != null && resource.data.userEmail == request.auth.token.email)
+                                );
+
+      // Uni-admins and super-admins can read resumes for review workflows.
+      allow read: if isUniversityAdmin() || isSuperAdmin();
+    }
+
+    // --- Saved Events (student bookmarks) ---
+    match /savedEvents/{saveId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // --- Exam Sessions (proctoring + live support) ---
+    match /exam_sessions/{sessionId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isUniversityAdmin() || isSuperAdmin()
+      );
+
+      // SECURITY: Messages scoped to session participants only (was: any authenticated user)
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/exam_sessions/$(sessionId)).data.userId == request.auth.uid
+          || isUniversityAdmin()
+          || isSuperAdmin()
+        );
+        allow create: if isAuthenticated() && (
+          get(/databases/$(database)/documents/exam_sessions/$(sessionId)).data.userId == request.auth.uid
+          || isUniversityAdmin()
+          || isSuperAdmin()
+        ) && request.resource.data.senderId == request.auth.uid;
+      }
+    }
+
+    // --- Practice Problems ---
+    match /practice_problems/{problemId} {
+      allow read: if isAuthenticated() && belongsToSameUniversity(resource.data.universityId);
+      allow create: if isUniversityAdmin() &&
+                    request.resource.data.universityId == getUserData().universityId &&
+                    request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isSuperAdmin() ||
+                            (isUniversityAdmin() && belongsToSameUniversity(resource.data.universityId));
+    }
+
+    // --- Practice Submissions ---
+    match /practice_submissions/{submissionId} {
+      allow read, create: if isAuthenticated() && request.auth.uid == (resource == null ? request.resource.data.userId : resource.data.userId);
+      allow read: if isUniversityAdmin() || isSuperAdmin();
+      allow update, delete: if false;
+    }
+
+    // --- Practice Pins (student bookmarks) ---
+    match /practice_pins/{pinId} {
+      allow read, create: if isAuthenticated() && request.auth.uid == (resource == null ? request.resource.data.userId : resource.data.userId);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // --- Internships (read by students same-uni; write by uni admins same-uni) ---
+    match /internships/{internshipId} {
+      allow read: if isAuthenticated() && (
+                    isSuperAdmin() ||
+                    belongsToSameUniversity(resource.data.universityId)
+                  );
+
+      allow create: if (isUniversityAdmin() &&
+                       request.resource.data.universityId == getUserData().universityId)
+                    || isSuperAdmin();
+
+      allow update, delete: if isSuperAdmin() ||
+                            (isUniversityAdmin() && belongsToSameUniversity(resource.data.universityId));
+    }
+
+    // --- Applications (student creates own; student reads own; uni admin reads scoped) ---
+    match /applications/{applicationId} {
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.keys().hasAll(['userId', 'internshipId']);
+
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isSuperAdmin();
+      // Uni admins can list a student's applications (support-inbox context
+      // sidebar) — same trust level as testResults above.
+      allow read: if isUniversityAdmin();
+      // Uni admins can read applications for internships in their university.
+      allow read: if isUniversityAdmin() && (
+        // Cross-doc check: the application points to an internship the admin owns.
+        get(/databases/$(database)/documents/internships/$(resource.data.internshipId)).data.universityId
+          == getUserData().universityId
+      );
+
+      // Status updates by admins only; students cannot edit after submit.
+      allow update: if (isUniversityAdmin() || isSuperAdmin())
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['status', 'reviewedAt', 'reviewedBy', 'notes']);
+
+      allow delete: if false;
+    }
+
+    // --- Event applications (in-app APPLY on events without a link) ---
+    match /eventApplications/{applicationId} {
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.keys().hasAll(['userId', 'eventId']);
+
+      // Students read their own; admins read for the applicants page
+      // (same trust level as the applications collection above).
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow read: if isUniversityAdmin() || isSuperAdmin();
+
+      // Applications are immutable once submitted.
+      allow update, delete: if false;
+    }
+
+    // --- Notifications (server-created via Cloud Functions; user reads own) ---
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+
+      // Users can flip read/readAt on their own notifications. Nothing else.
+      allow update: if isAuthenticated()
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['read', 'readAt']);
+
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+
+      // Creation is server-only (Cloud Functions with admin SDK bypasses these rules).
+      allow create: if false;
+    }
+
+    // --- Shared app config (AI key the web + app both use) ---
+    match /config/{docId} {
+      allow read: if isAuthenticated();
+      // Any signed-in install may seed the doc once; only admins change it.
+      allow create: if isAuthenticated()
+                    && request.resource.data.keys().hasOnly(['groqApiKey', 'updatedAt'])
+                    && isValidString(request.resource.data.groqApiKey, 200);
+      allow update: if (isUniversityAdmin() || isSuperAdmin())
+                    && request.resource.data.keys().hasOnly(['groqApiKey', 'updatedAt'])
+                    && isValidString(request.resource.data.groqApiKey, 200);
+      allow delete: if isSuperAdmin();
+    }
+
+    // --- Support chats (student <-> placement admins) ---
+    // One chat per student; the doc id IS the student's uid.
+    match /chats/{chatId} {
+      function isChatOwner() {
+        return isAuthenticated() && request.auth.uid == chatId;
+      }
+      function isChatAdmin() {
+        return isSuperAdmin() ||
+               (isUniversityAdmin() && belongsToSameUniversity(resource.data.universityId));
+      }
+
+      allow create: if isChatOwner()
+                    && request.resource.data.studentId == request.auth.uid;
+      allow read, update: if isChatOwner() || isChatAdmin();
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        function isMsgAdmin() {
+          return isSuperAdmin() ||
+                 (isUniversityAdmin() &&
+                  get(/databases/$(database)/documents/chats/$(chatId)).data.universityId
+                    == getUserData().universityId);
+        }
+
+        // Admins see everything; students only non-internal messages
+        // (their queries must filter internal == false).
+        allow read: if isMsgAdmin();
+        allow read: if isAuthenticated() && request.auth.uid == chatId
+                    && resource.data.internal == false;
+
+        allow create: if isAuthenticated()
+                      && request.resource.data.senderId == request.auth.uid
+                      && (
+                        isMsgAdmin() ||
+                        (request.auth.uid == chatId && request.resource.data.internal == false)
+                      );
+
+        // Participants may only flip read receipts.
+        allow update: if isAuthenticated()
+                      && (isMsgAdmin() || request.auth.uid == chatId)
+                      && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['seenByStudent', 'seenByAdmin']);
+        allow delete: if false;
+      }
+    }
+
+    // Catch-all: deny everything not explicitly allowed above
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

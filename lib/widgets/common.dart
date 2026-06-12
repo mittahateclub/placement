@@ -28,9 +28,9 @@ class SurfaceCard extends StatelessWidget {
         boxShadow: isLight
             ? [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 14,
+                  offset: const Offset(0, 3),
                 ),
               ]
             : null,
@@ -48,10 +48,10 @@ class SurfaceCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               border: borderColor != null
                   ? Border.all(color: borderColor!, width: 1.2)
-                  : isLight
-                      ? null
-                      : Border.all(
-                          color: scheme.outline.withValues(alpha: 0.7)),
+                  : Border.all(
+                      color: isLight
+                          ? scheme.outline
+                          : scheme.outline.withValues(alpha: 0.8)),
             ),
             child: child,
           ),

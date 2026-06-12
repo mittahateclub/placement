@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/student_filters.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common.dart';
 
@@ -23,6 +24,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _phone = TextEditingController();
+  String? _branch;
 
   bool _submitting = false;
   String _success = '';
@@ -60,6 +62,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         'studentId': _studentId.text.trim(),
         'universityName': auth.universityName ?? '',
         'verified': false,
+        'branch': _branch,
         'phone': _phone.text.trim(),
         'createdAt': FieldValue.serverTimestamp(),
         'createdBy': auth.user?.uid,
@@ -70,6 +73,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
         for (final c in [_name, _studentId, _email, _password, _phone]) {
           c.clear();
         }
+        setState(() => _branch = null);
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -158,6 +162,25 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   validator: (v) => (v == null || v.length < 6)
                       ? 'Min 6 characters'
                       : null,
+                ),
+                const SizedBox(height: 14),
+                const FieldLabel('Branch / Department'),
+                DropdownButtonFormField<String?>(
+                  initialValue: _branch,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child:
+                          Text('Not set', style: TextStyle(fontSize: 13.5)),
+                    ),
+                    for (final b in kBranches)
+                      DropdownMenuItem<String?>(
+                        value: b,
+                        child:
+                            Text(b, style: const TextStyle(fontSize: 13.5)),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _branch = v),
                 ),
                 const SizedBox(height: 14),
                 const FieldLabel('Phone Number'),

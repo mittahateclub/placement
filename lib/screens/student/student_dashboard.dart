@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/format.dart';
+import '../../core/student_filters.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common.dart';
+import '../../widgets/event_post_card.dart';
 import '../../widgets/loading_dots.dart';
 
 class StudentDashboard extends StatefulWidget {
@@ -17,8 +19,15 @@ class StudentDashboard extends StatefulWidget {
 }
 
 class _StudentDashboardState extends State<StudentDashboard> {
+  final _db = FirebaseFirestore.instance;
+
   bool _loading = true;
   List<Map<String, dynamic>> _todayEvents = [];
+  List<(String, Map<String, dynamic>)> _feed = [];
+  Set<String> _trendingIds = {};
+  final Map<String, String> _savedIds = {}; // eventId -> savedEvents doc id
+  final Set<String> _savingIds = {};
+  Set<String> _appliedEventIds = {};
 
   @override
   void initState() {
@@ -31,26 +40,132 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final uid = auth.user?.uid;
     if (uid == null) return;
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('savedEvents')
-          .where('userId', isEqualTo: uid)
-          .get();
+      final results = await Future.wait([
+        _db.collection('savedEvents').where('userId', isEqualTo: uid).get(),
+        _db.collection('events').get(),
+        _db
+            .collection('eventApplications')
+            .where('userId', isEqualTo: uid)
+            .get(),
+      ]);
+      final savedSnap = results[0];
+      final eventsSnap = results[1];
+      final appliedIds = results[2]
+          .docs
+          .map((d) => (d.data()['eventId'] as String?) ?? '')
+          .toSet();
+
       final today = DateTime.now();
-      final events = snap.docs
-          .map((d) => d.data())
-          .where((d) {
-            final date = toDate(d['date']);
-            return date != null && sameDay(date, today);
-          })
-          .toList();
+      _savedIds.clear();
+      final todayEvents = <Map<String, dynamic>>[];
+      for (final d in savedSnap.docs) {
+        final data = d.data();
+        if (data['source'] == 'event') {
+          _savedIds[data['eventId'] as String? ?? ''] = d.id;
+        }
+        final date = toDate(data['date']);
+        if (date != null && sameDay(date, today)) todayEvents.add(data);
+      }
+
+      // Feed: newest first. Expired events (past the end of their apply-by /
+      // event day) are hidden from students immediately; admins keep seeing
+      // them for a grace period on their side. Targeting (branch / min GPA)
+      // is applied here too.
+      final now = DateTime.now();
+      bool expired(Map<String, dynamic> data) {
+        final expiry = toDate(data['expiresAt']) ?? toDate(data['date']);
+        if (expiry == null) return false;
+        return now.isAfter(
+            DateTime(expiry.year, expiry.month, expiry.day, 23, 59, 59));
+      }
+
+      final feed = eventsSnap.docs
+          .map((d) => (d.id, d.data()))
+          .where((e) =>
+              !expired(e.$2) &&
+              eventTargetsStudent(e.$2, branch: auth.branch, gpa: auth.gpa))
+          .toList()
+        ..sort((a, b) =>
+            (toDate(b.$2['createdAt'] ?? b.$2['date'])
+                        ?.millisecondsSinceEpoch ??
+                    0)
+                .compareTo(
+                    toDate(a.$2['createdAt'] ?? a.$2['date'])
+                            ?.millisecondsSinceEpoch ??
+                        0));
+
+      // Trending = most engagement (comments + RSVPs) among current posts.
+      // Counted via aggregate queries so students need no write access.
+      final scores = <String, int>{};
+      await Future.wait(feed.take(25).map((e) async {
+        var score = ((e.$2['attendees'] as List?) ?? []).length;
+        try {
+          final agg = await _db
+              .collection('events')
+              .doc(e.$1)
+              .collection('comments')
+              .count()
+              .get();
+          score += (agg.count ?? 0) * 2;
+        } catch (_) {}
+        scores[e.$1] = score;
+      }));
+      final ranked = scores.entries.where((e) => e.value > 0).toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+      final trendingIds = ranked.take(2).map((e) => e.key).toSet();
+
+      // Trending posts float to the top of the feed.
+      feed.sort((a, b) {
+        final at = trendingIds.contains(a.$1) ? 1 : 0;
+        final bt = trendingIds.contains(b.$1) ? 1 : 0;
+        if (at != bt) return bt - at;
+        return 0; // keep recency order otherwise
+      });
+
       if (mounted) {
         setState(() {
-          _todayEvents = events;
+          _todayEvents = todayEvents;
+          _feed = feed;
+          _trendingIds = trendingIds;
+          _appliedEventIds = appliedIds;
           _loading = false;
         });
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _toggleSave(String eventId, Map<String, dynamic> data) async {
+    final uid = context.read<AuthService>().user?.uid;
+    if (uid == null) return;
+    setState(() => _savingIds.add(eventId));
+    try {
+      final existing = _savedIds[eventId];
+      if (existing != null) {
+        await _db.collection('savedEvents').doc(existing).delete();
+        setState(() => _savedIds.remove(eventId));
+      } else {
+        final ref = await _db.collection('savedEvents').add({
+          'userId': uid,
+          'eventId': eventId,
+          'source': 'event',
+          'title': data['title'],
+          'date': data['date'],
+          'type': data['type'],
+          'description': data['description'],
+          'location': data['location'],
+          'companyName': null,
+          'savedAt': FieldValue.serverTimestamp(),
+        });
+        setState(() => _savedIds[eventId] = ref.id);
+      }
+    } catch (_) {
+      if (mounted) {
+        showAppSnack(context, 'Could not update bookmark', error: true);
+      }
+    } finally {
+      if (mounted) setState(() => _savingIds.remove(eventId));
     }
   }
 
@@ -60,47 +175,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
     final auth = context.watch<AuthService>();
     final scheme = Theme.of(context).colorScheme;
-    final firstName =
-        (auth.userName ?? auth.user?.email ?? 'Student').split(RegExp(r'[ @]')).first;
-
-    final cards = [
-      _MenuCard(
-        title: 'College Space',
-        desc: 'Explore events, internships and campus opportunities',
-        icon: Icons.business_center_outlined,
-        onTap: () => widget.onNavigate('college'),
-      ),
-      _MenuCard(
-        title: 'Applications',
-        desc: 'Track your submissions and statuses in one place',
-        icon: Icons.assignment_turned_in_outlined,
-        onTap: () => widget.onNavigate('applications'),
-      ),
-      _MenuCard(
-        title: 'AI Resume Builder',
-        desc: 'Craft a professional resume with AI suggestions',
-        icon: Icons.auto_awesome_outlined,
-        onTap: () => widget.onNavigate('resume-builder'),
-      ),
-      _MenuCard(
-        title: 'Export Resume',
-        desc: 'Download your polished resume as a print-ready PDF',
-        icon: Icons.picture_as_pdf_outlined,
-        onTap: () => widget.onNavigate('my-resumes'),
-      ),
-      _MenuCard(
-        title: 'Results',
-        desc: 'View scores, percentiles and performance breakdowns',
-        icon: Icons.insights_outlined,
-        onTap: () => widget.onNavigate('results'),
-      ),
-      _MenuCard(
-        title: 'Profile',
-        desc: 'Manage your academic details and portfolio',
-        icon: Icons.person_outline_rounded,
-        onTap: () => widget.onNavigate('profile'),
-      ),
-    ];
+    final firstName = (auth.userName ?? auth.user?.email ?? 'Student')
+        .split(RegExp(r'[ @]'))
+        .first;
 
     return RefreshIndicator(
       onRefresh: _fetch,
@@ -114,13 +191,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   letterSpacing: -0.5)),
           const SizedBox(height: 4),
           Text(
-            'Here is what is happening today',
+            'Here is what is happening on campus',
             style: TextStyle(
                 fontSize: 13, color: scheme.onSurface.withValues(alpha: 0.5)),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
-          // ── Today's events ──
+          // ── Today's events → Calendar ──
           SurfaceCard(
             onTap: () => widget.onNavigate('calendar'),
             child: Column(
@@ -163,8 +240,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
-                        border:
-                            Border.all(color: color.withValues(alpha: 0.3)),
+                        border: Border.all(color: color.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
@@ -203,71 +279,31 @@ class _StudentDashboardState extends State<StudentDashboard> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // ── Quick access grid ──
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 1.18,
-            children: cards,
-          ),
+          // ── Campus feed ──
+          if (_feed.isEmpty)
+            const EmptyState(
+              icon: Icons.dynamic_feed_outlined,
+              title: 'No posts yet',
+              subtitle:
+                  'Events and opportunities from your placement cell appear here',
+            )
+          else
+            ..._feed.map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: EventPostCard(
+                    eventId: e.$1,
+                    data: e.$2,
+                    trending: _trendingIds.contains(e.$1),
+                    saved: _savedIds.containsKey(e.$1),
+                    saving: _savingIds.contains(e.$1),
+                    onToggleSave: () => _toggleSave(e.$1, e.$2),
+                    applied: _appliedEventIds.contains(e.$1),
+                    onNavigate: widget.onNavigate,
+                  ),
+                )),
           const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-}
-
-class _MenuCard extends StatelessWidget {
-  final String title;
-  final String desc;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _MenuCard({
-    required this.title,
-    required this.desc,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return SurfaceCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(9),
-              border: Border.all(color: scheme.outline),
-            ),
-            child: Icon(icon, size: 17, color: AppColors.accent),
-          ),
-          const Spacer(),
-          Text(title,
-              style: const TextStyle(
-                  fontSize: 13.5, fontWeight: FontWeight.w700)),
-          const SizedBox(height: 3),
-          Text(
-            desc,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-                fontSize: 10.5,
-                height: 1.35,
-                color: scheme.onSurface.withValues(alpha: 0.45)),
-          ),
         ],
       ),
     );

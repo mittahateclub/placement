@@ -69,7 +69,7 @@ class _UniadminDashboardState extends State<UniadminDashboard> {
       (
         'Manage Tests',
         'Review, approve and share tests with students',
-        Icons.fact_check_outlined,
+        Icons.quiz_outlined,
         'tests'
       ),
       (
@@ -79,15 +79,21 @@ class _UniadminDashboardState extends State<UniadminDashboard> {
         'events'
       ),
       (
+        'Support Inbox',
+        'Student chats handled like tickets — claim and reply',
+        Icons.chat_bubble_outline_rounded,
+        'inbox'
+      ),
+      (
         'Register Student',
         'Create student profiles for your university',
-        Icons.person_add_alt_outlined,
+        Icons.person_add_outlined,
         'create-account'
       ),
       (
         'Student Database',
         'Browse and manage all registered students',
-        Icons.storage_outlined,
+        Icons.group_outlined,
         'students'
       ),
       (
@@ -119,7 +125,7 @@ class _UniadminDashboardState extends State<UniadminDashboard> {
             children: [
               Expanded(
                 child: StatCard(
-                  icon: Icons.groups_outlined,
+                  icon: Icons.group_outlined,
                   color: AppColors.accent,
                   value: '${_studentCount ?? '—'}',
                   label: 'Students',
@@ -137,7 +143,7 @@ class _UniadminDashboardState extends State<UniadminDashboard> {
               const SizedBox(width: 8),
               Expanded(
                 child: StatCard(
-                  icon: Icons.fact_check_outlined,
+                  icon: Icons.quiz_outlined,
                   color: AppColors.amber,
                   value: '${_testCount ?? '—'}',
                   label: 'Tests',

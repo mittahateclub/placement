@@ -30,12 +30,13 @@ class AppBottomNav extends StatelessWidget {
         decoration: BoxDecoration(
           color: scheme.surfaceContainer,
           borderRadius: BorderRadius.circular(26),
-          border: isLight
-              ? null
-              : Border.all(color: scheme.outline.withValues(alpha: 0.7)),
+          border: Border.all(
+              color: isLight
+                  ? scheme.outline
+                  : scheme.outline.withValues(alpha: 0.8)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isLight ? 0.10 : 0.45),
+              color: Colors.black.withValues(alpha: isLight ? 0.08 : 0.5),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),

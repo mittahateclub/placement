@@ -65,19 +65,19 @@ class _SuperadminDashboardState extends State<SuperadminDashboard> {
       (
         'Manage Students',
         'View, edit and verify every student account',
-        Icons.groups_outlined,
+        Icons.group_outlined,
         'manage-students'
       ),
       (
         'Create Uni Admin',
         'Add a new university administrator',
-        Icons.person_add_alt_outlined,
+        Icons.person_add_outlined,
         'create-uniadmin'
       ),
       (
         'Manage Uni Admins',
         'Review and edit administrator accounts',
-        Icons.admin_panel_settings_outlined,
+        Icons.manage_accounts_outlined,
         'manage-uniadmins'
       ),
     ];
@@ -111,7 +111,7 @@ class _SuperadminDashboardState extends State<SuperadminDashboard> {
               const SizedBox(width: 8),
               Expanded(
                 child: StatCard(
-                  icon: Icons.admin_panel_settings_outlined,
+                  icon: Icons.manage_accounts_outlined,
                   color: AppColors.blue,
                   value: '${_admins ?? '—'}',
                   label: 'Uni Admins',
@@ -120,7 +120,7 @@ class _SuperadminDashboardState extends State<SuperadminDashboard> {
               const SizedBox(width: 8),
               Expanded(
                 child: StatCard(
-                  icon: Icons.groups_outlined,
+                  icon: Icons.group_outlined,
                   color: AppColors.success,
                   value: '${_students ?? '—'}',
                   label: 'Students',

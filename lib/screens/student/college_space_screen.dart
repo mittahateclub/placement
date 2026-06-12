@@ -1,19 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/format.dart';
+import '../../core/student_filters.dart';
 import '../../models/college_item.dart';
 import '../../services/auth_service.dart';
+import '../../services/event_application_service.dart';
 import '../../widgets/common.dart';
 import '../../widgets/loading_dots.dart';
 import 'internship_detail_screen.dart';
+import 'resume_builder_screen.dart';
+
+/// One-shot handoff: the calendar sets an event id here before switching to
+/// the College tab, and College Space pins + highlights that event on open.
+class CollegeSpaceFocus {
+  static String? eventId;
+}
 
 /// All events + internships from the university, with search & bookmarks
 /// (mirrors the web "College Space" page).
 class CollegeSpaceScreen extends StatefulWidget {
-  const CollegeSpaceScreen({super.key});
+  final void Function(String id)? onNavigate;
+  const CollegeSpaceScreen({super.key, this.onNavigate});
 
   @override
   State<CollegeSpaceScreen> createState() => _CollegeSpaceScreenState();
@@ -26,12 +37,17 @@ class _CollegeSpaceScreenState extends State<CollegeSpaceScreen> {
   List<CollegeItem> _items = [];
   final Map<String, String> _savedIds = {}; // saveKey -> savedEvents doc id
   final Set<String> _savingKeys = {};
+  Set<String> _appliedEventIds = {};
+  final Set<String> _applyingIds = {};
   String _query = '';
   bool _showSaved = false;
+  String? _focusEventId;
 
   @override
   void initState() {
     super.initState();
+    _focusEventId = CollegeSpaceFocus.eventId;
+    CollegeSpaceFocus.eventId = null;
     _fetch();
   }
 
@@ -50,18 +66,37 @@ class _CollegeSpaceScreenState extends State<CollegeSpaceScreen> {
                 .where('universityId', isEqualTo: universityId)
                 .get(),
         _db.collection('savedEvents').where('userId', isEqualTo: uid).get(),
+        EventApplicationService.appliedEventIds(uid),
       ]);
 
+      // Students never see expired listings, and events respect their
+      // branch / GPA targeting.
+      final now = DateTime.now();
       final all = <CollegeItem>[
         ...(results[0] as QuerySnapshot<Map<String, dynamic>>)
             .docs
-            .map(CollegeItem.fromEvent),
+            .map(CollegeItem.fromEvent)
+            .where((e) =>
+                (e.effectiveExpiry == null ||
+                    now.isBefore(e.effectiveExpiry!)) &&
+                eventTargetsStudent(e.raw,
+                    branch: auth.branch, gpa: auth.gpa)),
         if (results[1] != null)
           ...(results[1] as QuerySnapshot<Map<String, dynamic>>)
               .docs
-              .map(CollegeItem.fromInternship),
+              .map(CollegeItem.fromInternship)
+              .where((i) =>
+                  i.effectiveExpiry == null ||
+                  now.isBefore(i.effectiveExpiry!)),
       ]..sort((a, b) => (a.date?.millisecondsSinceEpoch ?? 0)
           .compareTo(b.date?.millisecondsSinceEpoch ?? 0));
+
+      // An event opened from the calendar floats to the top, highlighted.
+      if (_focusEventId != null) {
+        final i = all.indexWhere(
+            (e) => e.source == 'event' && e.id == _focusEventId);
+        if (i > 0) all.insert(0, all.removeAt(i));
+      }
 
       _savedIds.clear();
       for (final d
@@ -73,6 +108,7 @@ class _CollegeSpaceScreenState extends State<CollegeSpaceScreen> {
       if (mounted) {
         setState(() {
           _items = all;
+          _appliedEventIds = results[3] as Set<String>;
           _loading = false;
         });
       }
@@ -82,6 +118,52 @@ class _CollegeSpaceScreenState extends State<CollegeSpaceScreen> {
         showAppSnack(context, 'Failed to load College Space', error: true);
       }
     }
+  }
+
+  Future<void> _applyTo(CollegeItem item) async {
+    final auth = context.read<AuthService>();
+    final link = item.link;
+    if (link != null && link.isNotEmpty) {
+      final uri = Uri.tryParse(link);
+      if (uri == null) return;
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && mounted) {
+        showAppSnack(context, 'Could not open the link.', error: true);
+      }
+      return;
+    }
+    if (_appliedEventIds.contains(item.id) ||
+        _applyingIds.contains(item.id)) {
+      return;
+    }
+    setState(() => _applyingIds.add(item.id));
+    try {
+      await EventApplicationService.apply(
+          eventId: item.id, eventData: item.raw, auth: auth);
+      if (mounted) {
+        setState(() => _appliedEventIds.add(item.id));
+        showAppSnack(
+            context, 'Applied! The placement cell can see your application.');
+      }
+    } catch (_) {
+      if (mounted) showAppSnack(context, 'Could not apply.', error: true);
+    } finally {
+      if (mounted) setState(() => _applyingIds.remove(item.id));
+    }
+  }
+
+  void _generateResume(CollegeItem item) {
+    ResumePrefill.set(
+      company: (item.companyName?.isNotEmpty ?? false)
+          ? item.companyName
+          : item.title,
+      jobDescription: [
+        item.title,
+        if (item.location?.isNotEmpty ?? false) 'Location: ${item.location}',
+        item.description,
+      ].join('\n'),
+    );
+    widget.onNavigate?.call('resume-builder');
   }
 
   Future<void> _toggleSave(CollegeItem item) async {
@@ -217,6 +299,17 @@ class _CollegeSpaceScreenState extends State<CollegeSpaceScreen> {
                     saved: _savedIds.containsKey(item.saveKey),
                     saving: _savingKeys.contains(item.saveKey),
                     onToggleSave: () => _toggleSave(item),
+                    highlighted:
+                        item.source == 'event' && item.id == _focusEventId,
+                    applied: item.source == 'event' &&
+                        _appliedEventIds.contains(item.id),
+                    applying: _applyingIds.contains(item.id),
+                    onApply:
+                        item.source == 'event' ? () => _applyTo(item) : null,
+                    onGenerateResume: item.source == 'event' &&
+                            widget.onNavigate != null
+                        ? () => _generateResume(item)
+                        : null,
                     onOpen: item.source == 'internship'
                         ? () => Navigator.push(
                               context,
@@ -241,6 +334,11 @@ class _ListingCard extends StatelessWidget {
   final bool saving;
   final VoidCallback onToggleSave;
   final VoidCallback? onOpen;
+  final bool highlighted;
+  final bool applied;
+  final bool applying;
+  final VoidCallback? onApply;
+  final VoidCallback? onGenerateResume;
 
   const _ListingCard({
     required this.item,
@@ -248,6 +346,11 @@ class _ListingCard extends StatelessWidget {
     required this.saving,
     required this.onToggleSave,
     this.onOpen,
+    this.highlighted = false,
+    this.applied = false,
+    this.applying = false,
+    this.onApply,
+    this.onGenerateResume,
   });
 
   @override
@@ -255,9 +358,12 @@ class _ListingCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final d = item.date;
 
-    return SurfaceCard(
+    final card = SurfaceCard(
       onTap: onOpen,
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Date badge
@@ -360,6 +466,85 @@ class _ListingCard extends StatelessWidget {
           ),
         ],
       ),
+          // ── Event actions: tailor a resume + apply ──
+          if (onApply != null || onGenerateResume != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (onGenerateResume != null) ...[
+                  OutlinedButton.icon(
+                    onPressed: onGenerateResume,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 34),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      textStyle: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6),
+                    ),
+                    icon: const Icon(Icons.description_outlined, size: 13),
+                    label: const Text('RESUME'),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                if (onApply != null)
+                  applied
+                      ? FilledButton.icon(
+                          onPressed: null,
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 34),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 14),
+                            disabledBackgroundColor:
+                                AppColors.success.withValues(alpha: 0.15),
+                            disabledForegroundColor: AppColors.success,
+                            textStyle: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6),
+                          ),
+                          icon: const Icon(Icons.check_rounded, size: 14),
+                          label: const Text('APPLIED'),
+                        )
+                      : FilledButton.icon(
+                          onPressed: applying ? null : onApply,
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 34),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 14),
+                            textStyle: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6),
+                          ),
+                          icon: applying
+                              ? const SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white))
+                              : Icon(
+                                  (item.link?.isNotEmpty ?? false)
+                                      ? Icons.open_in_new_rounded
+                                      : Icons.send_rounded,
+                                  size: 13),
+                          label: const Text('APPLY'),
+                        ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+
+    if (!highlighted) return card;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.accent, width: 1.5),
+      ),
+      child: card,
     );
   }
 }

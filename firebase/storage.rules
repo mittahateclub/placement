@@ -1,0 +1,45 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Profile pictures: only the owner can upload/overwrite, anyone authenticated can read
+    match /profile_pictures/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Uploaded resumes: owner-only read/write with strict file and size validation.
+    // SECURITY: Removed application/octet-stream — it allows arbitrary binary uploads.
+    match /uploaded_resumes/{userId}/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource != null
+                   && request.resource.size < 6 * 1024 * 1024
+                   && (request.resource.contentType == 'application/pdf'
+                       || request.resource.contentType == 'application/msword'
+                       || request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    }
+
+    // Support-chat attachments. Roles aren't visible to Storage rules, so
+    // uploads are limited by auth + size + type; URLs are unguessable.
+    match /chat_attachments/{chatId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource != null
+                   && request.resource.size < 6 * 1024 * 1024
+                   && (request.resource.contentType.matches('image/.*')
+                       || request.resource.contentType == 'application/pdf'
+                       || request.resource.contentType == 'application/msword'
+                       || request.resource.contentType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    }
+
+    // Catch-all: deny everything not explicitly allowed
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

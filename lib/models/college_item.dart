@@ -19,6 +19,13 @@ class CollegeItem {
   final String? stipend;
   final String? duration;
 
+  // event-specific
+  final String? link;
+  final DateTime? expiresAt;
+
+  /// Raw Firestore data (events) — used for apply + targeting checks.
+  final Map<String, dynamic> raw;
+
   CollegeItem({
     required this.id,
     required this.title,
@@ -31,7 +38,16 @@ class CollegeItem {
     this.role,
     this.stipend,
     this.duration,
+    this.link,
+    this.expiresAt,
+    this.raw = const {},
   });
+
+  /// End of the day the event stops being relevant (apply-by wins).
+  DateTime? get effectiveExpiry {
+    final d = expiresAt ?? date;
+    return d == null ? null : DateTime(d.year, d.month, d.day, 23, 59, 59);
+  }
 
   String get saveKey => '$source-$id';
 
@@ -45,6 +61,10 @@ class CollegeItem {
       description: (d['description'] as String?) ?? '',
       location: d['location'] as String?,
       source: 'event',
+      companyName: d['company'] as String?,
+      link: (d['link'] as String?)?.trim(),
+      expiresAt: toDate(d['expiresAt']),
+      raw: d,
     );
   }
 

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf ~/Library/Developer/Xcode/DerivedData/*)",
+      "Bash(rm -rf \"/Users/satya/placement/uniship app/build\")",
+      "Bash(firebase deploy *)"
+    ]
+  }
+}
