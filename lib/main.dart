@@ -8,11 +8,13 @@ import 'core/theme_controller.dart';
 import 'firebase_options.dart';
 import 'screens/auth_gate.dart';
 import 'services/auth_service.dart';
+import 'services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await AppConfig.load();
+  await NotificationService.init();
   runApp(const UniShipApp());
 }
 

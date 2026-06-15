@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/bottom_nav.dart';
 import 'student/applications_screen.dart';
 import 'student/calendar_screen.dart';
 import 'student/chat_screen.dart';
 import 'student/college_space_screen.dart';
+import 'student/notifications_screen.dart';
 import 'student/my_resumes_screen.dart';
 import 'student/profile_screen.dart';
 import 'student/results_screen.dart';
@@ -59,8 +61,50 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   String? _selectedId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    NotificationService.tappedPayload.addListener(_onTappedPayload);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncReminders();
+      _onTappedPayload(); // consume a notification that cold-started the app
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    NotificationService.tappedPayload.removeListener(_onTappedPayload);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncReminders();
+      _onTappedPayload();
+    }
+  }
+
+  /// Recompute + reschedule a student's reminders (and surface newly posted
+  /// items). Cheap and safe to call on every app open/resume.
+  void _syncReminders() {
+    if (!mounted) return;
+    final auth = context.read<AuthService>();
+    if (auth.isStudent) NotificationService.sync(auth);
+  }
+
+  /// A tapped notification asks to open a specific tab.
+  void _onTappedPayload() {
+    final target = NotificationService.tappedPayload.value;
+    if (target == null) return;
+    NotificationService.tappedPayload.value = null;
+    if (mounted && target.isNotEmpty) _navigate(target);
+  }
 
   List<AppPage> _pagesFor(AuthService auth) {
     if (auth.isSuperAdmin) {
@@ -257,6 +301,8 @@ class _HomeShellState extends State<HomeShell> {
       appBar: AppBar(
         title: Text(selected.label),
         actions: [
+          if (auth.isStudent)
+            NotificationsAppBarButton(onNavigate: _navigate),
           if (auth.isStudent) const ChatAppBarButton(),
           if (auth.isUniAdmin)
             InboxAppBarButton(onOpen: () => _navigate('inbox')),

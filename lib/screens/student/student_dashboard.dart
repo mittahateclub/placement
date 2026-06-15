@@ -6,9 +6,26 @@ import '../../core/app_colors.dart';
 import '../../core/format.dart';
 import '../../core/student_filters.dart';
 import '../../services/auth_service.dart';
+import '../../services/notification_service.dart';
 import '../../widgets/common.dart';
 import '../../widgets/event_post_card.dart';
 import '../../widgets/loading_dots.dart';
+import 'internship_detail_screen.dart';
+
+/// One item in the unified home feed — an event (any type) or an internship.
+class _FeedItem {
+  final String source; // 'event' | 'internship'
+  final String id;
+  final Map<String, dynamic> data;
+  final DateTime? createdAt;
+  final DateTime? expiry;
+  int engagement = 0; // comments + RSVPs (events only)
+  int score = 0; // engagement + recency + expiry urgency
+
+  _FeedItem(this.source, this.id, this.data, {this.createdAt, this.expiry});
+
+  String get key => '$source-$id';
+}
 
 class StudentDashboard extends StatefulWidget {
   final void Function(String id) onNavigate;
@@ -23,10 +40,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   bool _loading = true;
   List<Map<String, dynamic>> _todayEvents = [];
-  List<(String, Map<String, dynamic>)> _feed = [];
-  Set<String> _trendingIds = {};
-  final Map<String, String> _savedIds = {}; // eventId -> savedEvents doc id
-  final Set<String> _savingIds = {};
+  List<_FeedItem> _feed = [];
+  Set<String> _trendingKeys = {}; // 'source-id' of trending items
+  final Map<String, String> _savedIds = {}; // 'source-id' -> savedEvents doc id
+  final Set<String> _savingIds = {}; // 'source-id' currently toggling
   Set<String> _appliedEventIds = {};
 
   @override
@@ -40,6 +57,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final uid = auth.user?.uid;
     if (uid == null) return;
     try {
+      final uni = auth.universityId;
       final results = await Future.wait([
         _db.collection('savedEvents').where('userId', isEqualTo: uid).get(),
         _db.collection('events').get(),
@@ -47,86 +65,108 @@ class _StudentDashboardState extends State<StudentDashboard> {
             .collection('eventApplications')
             .where('userId', isEqualTo: uid)
             .get(),
+        uni == null
+            ? Future.value(null)
+            : _db
+                .collection('internships')
+                .where('universityId', isEqualTo: uni)
+                .get(),
       ]);
-      final savedSnap = results[0];
-      final eventsSnap = results[1];
-      final appliedIds = results[2]
+      final savedSnap = results[0]!;
+      final eventsSnap = results[1]!;
+      final appliedIds = results[2]!
           .docs
           .map((d) => (d.data()['eventId'] as String?) ?? '')
           .toSet();
+      final internSnap = results[3];
 
-      final today = DateTime.now();
+      final now = DateTime.now();
       _savedIds.clear();
       final todayEvents = <Map<String, dynamic>>[];
       for (final d in savedSnap.docs) {
         final data = d.data();
-        if (data['source'] == 'event') {
-          _savedIds[data['eventId'] as String? ?? ''] = d.id;
-        }
+        final src = (data['source'] as String?) ?? 'event';
+        _savedIds['$src-${data['eventId']}'] = d.id;
         final date = toDate(data['date']);
-        if (date != null && sameDay(date, today)) todayEvents.add(data);
+        if (date != null && sameDay(date, now)) todayEvents.add(data);
       }
 
-      // Feed: newest first. Expired events (past the end of their apply-by /
-      // event day) are hidden from students immediately; admins keep seeing
-      // them for a grace period on their side. Targeting (branch / min GPA)
-      // is applied here too.
-      final now = DateTime.now();
-      bool expired(Map<String, dynamic> data) {
-        final expiry = toDate(data['expiresAt']) ?? toDate(data['date']);
+      // Hide anything past the end of its apply-by / deadline / event day.
+      bool expired(DateTime? expiry) {
         if (expiry == null) return false;
         return now.isAfter(
             DateTime(expiry.year, expiry.month, expiry.day, 23, 59, 59));
       }
 
-      final feed = eventsSnap.docs
-          .map((d) => (d.id, d.data()))
-          .where((e) =>
-              !expired(e.$2) &&
-              eventTargetsStudent(e.$2, branch: auth.branch, gpa: auth.gpa))
-          .toList()
-        ..sort((a, b) =>
-            (toDate(b.$2['createdAt'] ?? b.$2['date'])
-                        ?.millisecondsSinceEpoch ??
-                    0)
-                .compareTo(
-                    toDate(a.$2['createdAt'] ?? a.$2['date'])
-                            ?.millisecondsSinceEpoch ??
-                        0));
+      // Unified feed: all targeted events (any type) + the university's
+      // internships. Same source of truth as College Space.
+      final items = <_FeedItem>[];
+      for (final d in eventsSnap.docs) {
+        final data = d.data();
+        final expiry = toDate(data['expiresAt']) ?? toDate(data['date']);
+        if (expired(expiry)) continue;
+        if (!eventTargetsStudent(data, branch: auth.branch, gpa: auth.gpa)) {
+          continue;
+        }
+        items.add(_FeedItem('event', d.id, data,
+            createdAt: toDate(data['createdAt'] ?? data['date']),
+            expiry: expiry));
+      }
+      for (final d in internSnap?.docs ?? const []) {
+        final data = d.data();
+        final deadline = toDate(data['deadline']);
+        if (expired(deadline)) continue;
+        items.add(_FeedItem('internship', d.id, data,
+            createdAt: toDate(data['createdAt'] ?? data['deadline']),
+            expiry: deadline));
+      }
 
-      // Trending = most engagement (comments + RSVPs) among current posts.
-      // Counted via aggregate queries so students need no write access.
-      final scores = <String, int>{};
-      await Future.wait(feed.take(25).map((e) async {
-        var score = ((e.$2['attendees'] as List?) ?? []).length;
+      // Engagement (events only — internship reactions aren't student-readable).
+      // Aggregate counts so students need no write access.
+      items.sort((a, b) => (b.createdAt?.millisecondsSinceEpoch ?? 0)
+          .compareTo(a.createdAt?.millisecondsSinceEpoch ?? 0));
+      await Future.wait(
+          items.take(25).where((i) => i.source == 'event').map((i) async {
+        var eng = ((i.data['attendees'] as List?) ?? []).length;
         try {
           final agg = await _db
               .collection('events')
-              .doc(e.$1)
+              .doc(i.id)
               .collection('comments')
               .count()
               .get();
-          score += (agg.count ?? 0) * 2;
+          eng += (agg.count ?? 0) * 2;
         } catch (_) {}
-        scores[e.$1] = score;
+        i.engagement = eng;
       }));
-      final ranked = scores.entries.where((e) => e.value > 0).toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-      final trendingIds = ranked.take(2).map((e) => e.key).toSet();
 
-      // Trending posts float to the top of the feed.
-      feed.sort((a, b) {
-        final at = trendingIds.contains(a.$1) ? 1 : 0;
-        final bt = trendingIds.contains(b.$1) ? 1 : 0;
+      // Trending score = engagement + freshness + deadline urgency.
+      for (final i in items) {
+        i.score = i.engagement +
+            _recencyPoints(i.createdAt, now) +
+            _urgencyPoints(i.expiry, now);
+      }
+      final trendingKeys = (items.where((i) => i.score > 2).toList()
+            ..sort((a, b) => b.score.compareTo(a.score)))
+          .take(3)
+          .map((i) => i.key)
+          .toSet();
+
+      // Trending floats to the top (by score); everything else by recency.
+      items.sort((a, b) {
+        final at = trendingKeys.contains(a.key) ? 1 : 0;
+        final bt = trendingKeys.contains(b.key) ? 1 : 0;
         if (at != bt) return bt - at;
-        return 0; // keep recency order otherwise
+        if (at == 1) return b.score.compareTo(a.score);
+        return (b.createdAt?.millisecondsSinceEpoch ?? 0)
+            .compareTo(a.createdAt?.millisecondsSinceEpoch ?? 0);
       });
 
       if (mounted) {
         setState(() {
           _todayEvents = todayEvents;
-          _feed = feed;
-          _trendingIds = trendingIds;
+          _feed = items;
+          _trendingKeys = trendingKeys;
           _appliedEventIds = appliedIds;
           _loading = false;
         });
@@ -136,36 +176,60 @@ class _StudentDashboardState extends State<StudentDashboard> {
     }
   }
 
-  Future<void> _toggleSave(String eventId, Map<String, dynamic> data) async {
+  /// Newer posts rank higher.
+  int _recencyPoints(DateTime? createdAt, DateTime now) {
+    if (createdAt == null) return 0;
+    final h = now.difference(createdAt).inHours;
+    if (h < 24) return 4;
+    if (h < 72) return 2;
+    if (h < 168) return 1;
+    return 0;
+  }
+
+  /// Items closing soon surface as trending.
+  int _urgencyPoints(DateTime? expiry, DateTime now) {
+    if (expiry == null) return 0;
+    final h = expiry.difference(now).inHours;
+    if (h < 0) return 0;
+    if (h < 24) return 5;
+    if (h < 48) return 3;
+    if (h < 168) return 1;
+    return 0;
+  }
+
+  Future<void> _toggleSave(_FeedItem item) async {
     final uid = context.read<AuthService>().user?.uid;
     if (uid == null) return;
-    setState(() => _savingIds.add(eventId));
+    final key = item.key;
+    setState(() => _savingIds.add(key));
     try {
-      final existing = _savedIds[eventId];
+      final existing = _savedIds[key];
       if (existing != null) {
         await _db.collection('savedEvents').doc(existing).delete();
-        setState(() => _savedIds.remove(eventId));
+        setState(() => _savedIds.remove(key));
       } else {
+        final data = item.data;
         final ref = await _db.collection('savedEvents').add({
           'userId': uid,
-          'eventId': eventId,
-          'source': 'event',
-          'title': data['title'],
-          'date': data['date'],
-          'type': data['type'],
+          'eventId': item.id,
+          'source': item.source,
+          'title': data['title'] ?? data['role'],
+          'date': data['date'] ?? data['deadline'],
+          'type': item.source == 'internship' ? 'internship' : data['type'],
           'description': data['description'],
           'location': data['location'],
-          'companyName': null,
+          'companyName': data['company'] ?? data['companyName'],
           'savedAt': FieldValue.serverTimestamp(),
         });
-        setState(() => _savedIds[eventId] = ref.id);
+        setState(() => _savedIds[key] = ref.id);
       }
+      if (mounted) NotificationService.sync(context.read<AuthService>());
     } catch (_) {
       if (mounted) {
         showAppSnack(context, 'Could not update bookmark', error: true);
       }
     } finally {
-      if (mounted) setState(() => _savingIds.remove(eventId));
+      if (mounted) setState(() => _savingIds.remove(key));
     }
   }
 
@@ -290,17 +354,28 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   'Events and opportunities from your placement cell appear here',
             )
           else
-            ..._feed.map((e) => Padding(
+            ..._feed.map((item) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: EventPostCard(
-                    eventId: e.$1,
-                    data: e.$2,
-                    trending: _trendingIds.contains(e.$1),
-                    saved: _savedIds.containsKey(e.$1),
-                    saving: _savingIds.contains(e.$1),
-                    onToggleSave: () => _toggleSave(e.$1, e.$2),
-                    applied: _appliedEventIds.contains(e.$1),
+                    eventId: item.id,
+                    data: item.data,
+                    source: item.source,
+                    trending: _trendingKeys.contains(item.key),
+                    saved: _savedIds.containsKey(item.key),
+                    saving: _savingIds.contains(item.key),
+                    onToggleSave: () => _toggleSave(item),
+                    applied: item.source == 'event' &&
+                        _appliedEventIds.contains(item.id),
                     onNavigate: widget.onNavigate,
+                    onOpenDetail: item.source == 'internship'
+                        ? () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => InternshipDetailScreen(
+                                    internshipId: item.id),
+                              ),
+                            )
+                        : null,
                   ),
                 )),
           const SizedBox(height: 24),

@@ -11,8 +11,9 @@ import '../services/event_application_service.dart';
 import 'common.dart';
 import 'loading_dots.dart';
 
-/// Feed post for an event — image (when the link scrape found one),
-/// caption-style description, comments, save and apply.
+/// Feed post for a College Space item — an event (any type) or an internship.
+/// Image (when the link scrape found one), caption-style description, comments
+/// (events), save, and apply / view details.
 class EventPostCard extends StatefulWidget {
   final String eventId;
   final Map<String, dynamic> data;
@@ -21,11 +22,18 @@ class EventPostCard extends StatefulWidget {
   final bool saving;
   final VoidCallback onToggleSave;
 
+  /// 'event' or 'internship' — drives the comments collection, the action row
+  /// and which fields are read from [data].
+  final String source;
+
   /// Whether this student already applied in-app (link-less events).
   final bool applied;
 
   /// Tab navigation from the home shell (used by Generate Resume).
   final void Function(String id)? onNavigate;
+
+  /// Opens the full detail page (internships apply from there).
+  final VoidCallback? onOpenDetail;
 
   const EventPostCard({
     super.key,
@@ -35,9 +43,13 @@ class EventPostCard extends StatefulWidget {
     required this.saved,
     required this.saving,
     required this.onToggleSave,
+    this.source = 'event',
     this.applied = false,
     this.onNavigate,
+    this.onOpenDetail,
   });
+
+  bool get isInternship => source == 'internship';
 
   @override
   State<EventPostCard> createState() => _EventPostCardState();
@@ -52,7 +64,7 @@ class _EventPostCardState extends State<EventPostCard> {
   @override
   void initState() {
     super.initState();
-    _loadCommentCount();
+    if (!widget.isInternship) _loadCommentCount();
   }
 
   Future<void> _loadCommentCount() async {
@@ -112,13 +124,13 @@ class _EventPostCardState extends State<EventPostCard> {
 
   void _generateResume() {
     final data = widget.data;
-    final title = (data['title'] as String?) ?? '';
+    final title = ((data['title'] ?? data['role']) as String?) ?? '';
     final location = ((data['location'] as String?) ?? '').trim();
     final description = ((data['description'] as String?) ?? '').trim();
+    final company =
+        ((data['company'] ?? data['companyName']) as String?)?.trim() ?? '';
     ResumePrefill.set(
-      company: ((data['company'] as String?) ?? '').trim().isNotEmpty
-          ? (data['company'] as String).trim()
-          : title,
+      company: company.isNotEmpty ? company : title,
       jobDescription: [
         title,
         if (location.isNotEmpty) 'Location: $location',
@@ -133,14 +145,22 @@ class _EventPostCardState extends State<EventPostCard> {
     final scheme = Theme.of(context).colorScheme;
     final data = widget.data;
 
-    final title = (data['title'] as String?) ?? 'Untitled';
-    final type = (data['type'] as String?) ?? 'event';
+    final isIntern = widget.isInternship;
+    final title =
+        ((data['title'] ?? data['role']) as String?) ?? 'Untitled';
+    final type = (data['type'] as String?) ?? (isIntern ? 'internship' : 'event');
     final description = ((data['description'] as String?) ?? '').trim();
     final imageUrl = (data['imageUrl'] as String?)?.trim();
     final link = (data['link'] as String?)?.trim();
     final location = ((data['location'] as String?) ?? '').trim();
+    final company =
+        ((data['company'] ?? data['companyName']) as String?)?.trim() ?? '';
+    final stipend = ((data['stipend'] as String?) ?? '').trim();
+    final duration = ((data['duration'] as String?) ?? '').trim();
     final date = toDate(data['date']);
-    final expiry = toDate(data['expiresAt']) ?? date;
+    // Internships use a deadline; events use apply-by (expiresAt) then date.
+    final expiry =
+        toDate(data['expiresAt']) ?? toDate(data['deadline']) ?? date;
 
     final now = DateTime.now();
     final expired = expiry != null &&
@@ -149,8 +169,11 @@ class _EventPostCardState extends State<EventPostCard> {
         !expired && expiry != null && expiry.difference(now).inHours < 48;
 
     final meta = [
+      if (company.isNotEmpty) company,
       if (location.isNotEmpty) location,
-      if (date != null) formatDayDate(date),
+      if (isIntern && stipend.isNotEmpty) stipend,
+      if (isIntern && duration.isNotEmpty) duration,
+      if (!isIntern && date != null) formatDayDate(date),
     ].join('  ·  ');
 
     return SurfaceCard(
@@ -282,21 +305,23 @@ class _EventPostCardState extends State<EventPostCard> {
             padding: const EdgeInsets.fromLTRB(6, 4, 10, 6),
             child: Row(
               children: [
-                TextButton.icon(
-                  onPressed: _openComments,
-                  style: TextButton.styleFrom(
-                    foregroundColor: scheme.onSurface.withValues(alpha: 0.55),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                if (!isIntern)
+                  TextButton.icon(
+                    onPressed: _openComments,
+                    style: TextButton.styleFrom(
+                      foregroundColor: scheme.onSurface.withValues(alpha: 0.55),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                    ),
+                    icon:
+                        const Icon(Icons.chat_bubble_outline_rounded, size: 16),
+                    label: Text(
+                      _commentCount == null || _commentCount == 0
+                          ? 'Comment'
+                          : '$_commentCount',
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
                   ),
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
-                  label: Text(
-                    _commentCount == null || _commentCount == 0
-                        ? 'Comment'
-                        : '$_commentCount',
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w700),
-                  ),
-                ),
                 IconButton(
                   onPressed: widget.saving ? null : widget.onToggleSave,
                   visualDensity: VisualDensity.compact,
@@ -327,7 +352,21 @@ class _EventPostCardState extends State<EventPostCard> {
                   ),
                   const SizedBox(width: 8),
                 ],
-                if (link != null && link.isNotEmpty)
+                if (isIntern)
+                  FilledButton.icon(
+                    onPressed: widget.onOpenDetail,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      textStyle: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6),
+                    ),
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 13),
+                    label: const Text('VIEW'),
+                  )
+                else if (link != null && link.isNotEmpty)
                   FilledButton.icon(
                     onPressed: _apply,
                     style: FilledButton.styleFrom(

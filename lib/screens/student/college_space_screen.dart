@@ -9,6 +9,7 @@ import '../../core/student_filters.dart';
 import '../../models/college_item.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_application_service.dart';
+import '../../services/notification_service.dart';
 import '../../widgets/common.dart';
 import '../../widgets/loading_dots.dart';
 import 'internship_detail_screen.dart';
@@ -191,6 +192,7 @@ class _CollegeSpaceScreenState extends State<CollegeSpaceScreen> {
         });
         setState(() => _savedIds[key] = ref.id);
       }
+      if (mounted) NotificationService.sync(auth);
     } catch (_) {
       if (mounted) showAppSnack(context, 'Could not update bookmark', error: true);
     } finally {
