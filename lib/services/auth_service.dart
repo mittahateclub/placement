@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import '../core/app_config.dart';
 import '../core/student_filters.dart';
+import 'push_service.dart';
 
 /// Mirrors the web app's AuthContext: Firebase Auth session + the
 /// `users/{uid}` profile document (role, university, name, photo).
@@ -37,13 +38,17 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _onAuthChanged(User? firebaseUser) async {
+    final previousUid = user?.uid;
     user = firebaseUser;
     if (firebaseUser != null) {
       await refreshProfile();
       // Share the Groq key via Firestore so installs built without
       // --dart-define still get it (and seed it from ones that have it).
       unawaited(AppConfig.syncRemoteKey());
+      // Register this device for WhatsApp-style push (students only).
+      if (isStudent) unawaited(PushService.bindUser(firebaseUser.uid));
     } else {
+      if (previousUid != null) unawaited(PushService.unbindUser(previousUid));
       role = null;
       universityId = null;
       universityName = null;

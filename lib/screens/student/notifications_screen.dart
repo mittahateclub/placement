@@ -18,18 +18,37 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen>
+    with WidgetsBindingObserver {
   bool _granted = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final auth = context.read<AuthService>();
     // Refresh in the background, then clear the unread badge.
     NotificationService.sync(auth).then((_) => NotificationService.markAllSeen());
-    NotificationService.permissionGranted().then((g) {
-      if (mounted) setState(() => _granted = g);
-    });
+    _refreshGranted();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The user leaves to system settings to allow notifications and comes back —
+    // re-check so the prompt clears the moment it's allowed.
+    if (state == AppLifecycleState.resumed) _refreshGranted();
+  }
+
+  Future<void> _refreshGranted() async {
+    final granted = await NotificationService.permissionGranted();
+    if (!mounted) return;
+    setState(() => _granted = granted);
   }
 
   Future<void> _refresh() async {
@@ -41,18 +60,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final auth = context.read<AuthService>();
     await NotificationService.setEnabled(value, auth);
     if (value) {
-      final granted = await NotificationService.requestPermission();
-      if (mounted) setState(() => _granted = granted);
+      await NotificationService.requestPermission();
+      // Quietly maximise reliability behind the scenes — no jargon shown to the
+      // student. Only pops the one-tap system dialog if not already exempt.
+      if (!await NotificationService.isBatteryUnrestricted()) {
+        await NotificationService.requestBatteryExemption();
+      }
     }
-    if (mounted) setState(() {});
+    await _refreshGranted();
   }
 
   Future<void> _sendTest() async {
     final status = await NotificationService.sendTestNotification();
-    final granted = await NotificationService.permissionGranted();
+    await _refreshGranted();
     if (!mounted) return;
-    setState(() => _granted = granted);
-    showAppSnack(context, status, error: !granted);
+    showAppSnack(context, status, error: !_granted);
   }
 
   void _open(AppAlert a) {
@@ -102,9 +124,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     onChanged: _toggle,
                     onTest: _sendTest,
                     onFixPermission: () async {
-                      final g =
-                          await NotificationService.requestPermission();
-                      if (mounted) setState(() => _granted = g);
+                      await NotificationService.requestPermission();
+                      await _refreshGranted();
                     },
                   ),
                   const SizedBox(height: 16),
@@ -157,7 +178,6 @@ class _ReminderToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return SurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,41 +218,68 @@ class _ReminderToggle extends StatelessWidget {
               label: const Text('Send a test notification'),
             ),
           ),
-          if (enabled && !granted) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.amber.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-                border:
-                    Border.all(color: AppColors.amber.withValues(alpha: 0.35)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline_rounded,
-                      size: 15, color: AppColors.amber),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Notifications are turned off for UniShip on this device.',
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: scheme.onSurface.withValues(alpha: 0.6)),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: onFixPermission,
-                    style: TextButton.styleFrom(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(horizontal: 8)),
-                    child: const Text('Allow'),
-                  ),
-                ],
+          // The only thing a student needs to act on: if the OS has blocked
+          // notifications for UniShip, one tap to turn them on. Everything else
+          // (battery exemption, exact alarms) is handled silently on enable.
+          if (enabled && !granted)
+            _FixBanner(
+              message: 'Turn on notifications to get reminders and updates.',
+              actionLabel: 'Turn on',
+              onAction: onFixPermission,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Amber inline warning with a one-tap fix action.
+class _FixBanner extends StatelessWidget {
+  final String message;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  const _FixBanner({
+    required this.message,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.amber.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.amber.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline_rounded,
+                size: 15, color: AppColors.amber),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                    fontSize: 11,
+                    height: 1.3,
+                    color: scheme.onSurface.withValues(alpha: 0.6)),
               ),
             ),
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(horizontal: 8)),
+              child: Text(actionLabel),
+            ),
           ],
-        ],
+        ),
       ),
     );
   }

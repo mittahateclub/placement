@@ -9,12 +9,23 @@ import 'firebase_options.dart';
 import 'screens/auth_gate.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
+import 'services/push_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // On Android the google-services plugin auto-initializes the default app from
+  // google-services.json before Dart runs. That native app already has the
+  // correct (Android) config, so if our explicit init collides with it we just
+  // keep the existing one instead of crashing with [core/duplicate-app].
+  try {
+    await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform);
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') rethrow;
+  }
   await AppConfig.load();
   await NotificationService.init();
+  await PushService.init();
   runApp(const UniShipApp());
 }
 

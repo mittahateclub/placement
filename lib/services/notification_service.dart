@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -63,6 +64,9 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  /// Native bridge for battery-optimisation controls (Android only).
+  static const MethodChannel _native = MethodChannel('uniship/notifications');
 
   static const String _channelId = 'reminders';
   static const String _kEnabled = 'notif_enabled';
@@ -198,6 +202,64 @@ class NotificationService {
         AndroidFlutterLocalNotificationsPlugin>();
     if (android != null) return (await android.areNotificationsEnabled()) ?? true;
     return true;
+  }
+
+  // ── Background-delivery health (Android) ───────────────────────────────
+  //
+  // Scheduled reminders are handed to Android's AlarmManager, but two device
+  // settings stop the OS from delivering them while the app is closed:
+  //   • exact-alarm permission denied (Android 12/13) → alarms become inexact
+  //     and can be delayed for a long time, or
+  //   • the app isn't exempt from battery optimisation → Doze defers/drops the
+  //     alarm, and many OEMs cancel it outright when the app is swiped away.
+  // We surface both so the student can fix them in one tap.
+
+  /// Whether the OS will deliver our alarms at the exact scheduled time.
+  /// `true` on iOS / pre-Android-12 where it isn't gated.
+  static Future<bool> canScheduleExact() async {
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return true;
+    try {
+      return (await android.canScheduleExactNotifications()) ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Opens the system "Alarms & reminders" screen for UniShip.
+  static Future<void> openExactAlarmSettings() async {
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    try {
+      await android?.requestExactAlarmsPermission();
+    } catch (_) {}
+  }
+
+  /// Whether UniShip is exempt from battery optimisation (so Doze won't drop
+  /// our alarms). `true` where the concept doesn't apply (iOS / old Android).
+  static Future<bool> isBatteryUnrestricted() async {
+    try {
+      final v = await _native
+          .invokeMethod<bool>('isIgnoringBatteryOptimizations');
+      return v ?? true;
+    } catch (_) {
+      return true; // not Android, or channel unavailable — don't nag.
+    }
+  }
+
+  /// Shows the system dialog to exempt UniShip from battery optimisation.
+  static Future<void> requestBatteryExemption() async {
+    try {
+      await _native.invokeMethod('requestIgnoreBatteryOptimizations');
+    } catch (_) {}
+  }
+
+  /// True when scheduled reminders should reliably fire in the background.
+  static Future<bool> deliveryReliable() async {
+    final results =
+        await Future.wait([canScheduleExact(), isBatteryUnrestricted()]);
+    return results[0] && results[1];
   }
 
   static Future<void> setEnabled(bool value, AuthService auth) async {
@@ -594,6 +656,13 @@ class NotificationService {
       await _plugin.show(id, title, body, _details, payload: payload);
     } catch (_) {}
   }
+
+  /// Display an FCM push as a local notification (used when a push arrives
+  /// while the app is in the foreground, where Android won't show it itself).
+  /// Reuses the reminder channel + branding so it looks identical.
+  static Future<void> showPush(String title, String body, String? payload) =>
+      _show(DateTime.now().millisecondsSinceEpoch & 0x7fffffff, title, body,
+          payload);
 
   static Future<QuerySnapshot<Map<String, dynamic>>?> _tryGet(
       Query<Map<String, dynamic>> q) async {

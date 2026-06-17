@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "1051779016295",
+    "project_id": "uniship-4c1a1",
+    "storage_bucket": "uniship-4c1a1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051779016295:android:3b2e05a2725be543e696c2",
+        "android_client_info": {
+          "package_name": "com.example.uniship_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAr326V71RfP9AhQTgCiuYvEBITwKHaljA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051779016295:android:6a93b352baac6901e696c2",
+        "android_client_info": {
+          "package_name": "com.example.uniship_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAr326V71RfP9AhQTgCiuYvEBITwKHaljA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051779016295:android:2c57ce1e41ba42e3e696c2",
+        "android_client_info": {
+          "package_name": "com.uniship.uniship_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAr326V71RfP9AhQTgCiuYvEBITwKHaljA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

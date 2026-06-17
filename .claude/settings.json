@@ -3,7 +3,9 @@
     "allow": [
       "Bash(rm -rf ~/Library/Developer/Xcode/DerivedData/*)",
       "Bash(rm -rf \"/Users/satya/placement/uniship app/build\")",
-      "Bash(firebase deploy *)"
+      "Bash(firebase deploy *)",
+      "Bash(cd \"/Users/satya/placement/uniship app\" && echo \"=== pubspec deps ===\" && sed -n '/dependencies:/,/dev_dependencies:/p' pubspec.yaml && echo \"=== notification refs ===\" && grep -rli -E \"notification|fcm|messaging\" lib/ ; echo \"=== collections referenced ===\" && grep -rhoE \"collection\\\\\\('[a-zA-Z]+'\\\\\\)\" lib/ | sort | uniq -c | sort -rn)",
+      "Bash(flutter analyze *)"
     ]
   }
 }
