@@ -235,9 +235,11 @@ class _CreateUniadminScreenState extends State<CreateUniadminScreen> {
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 18),
-                FilledButton(
+                GradientButton(
+                  label: 'Create Admin',
+                  icon: Icons.person_add_alt_1_rounded,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _submit,
-                  child: Text(_submitting ? 'CREATING…' : 'CREATE ADMIN'),
                 ),
               ],
             ),

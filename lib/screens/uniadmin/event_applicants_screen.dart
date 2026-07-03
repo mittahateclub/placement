@@ -102,9 +102,8 @@ class EventApplicantsScreen extends StatelessWidget {
                                   horizontal: 12)),
                           icon: const Icon(Icons.mail_outline_rounded,
                               size: 14),
-                          label: const Text('EMAIL',
-                              style: TextStyle(
-                                  fontSize: 11, letterSpacing: 0.6)),
+                          label: const Text('Email',
+                              style: TextStyle(fontSize: 12)),
                         ),
                 ),
                 const SizedBox(height: 16),

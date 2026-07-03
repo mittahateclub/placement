@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../core/format.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common.dart';
@@ -100,7 +101,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
       ? AppColors.success
       : pct >= 60
           ? AppColors.amber
-          : AppColors.accent;
+          : AppColors.danger;
 
   @override
   Widget build(BuildContext context) {
@@ -183,8 +184,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           decoration: BoxDecoration(
                             color: color,
                             borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(14),
-                              bottomLeft: Radius.circular(14),
+                              topLeft: Radius.circular(20),
+                              bottomLeft: Radius.circular(20),
                             ),
                           ),
                         ),
@@ -204,10 +205,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                           Text(r.title,
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight:
-                                                      FontWeight.w700)),
+                                              style: AppTheme.display(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w600,
+                                                  letterSpacing: -0.2,
+                                                  color: scheme.onSurface)),
                                           const SizedBox(height: 4),
                                           Text(
                                             formatDate(r.submittedAt),
@@ -228,22 +230,30 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                         ],
                                       ),
                                     ),
-                                    Container(
-                                      width: 52,
-                                      height: 52,
-                                      alignment: Alignment.center,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: color.withValues(alpha: 0.06),
-                                        border: Border.all(
-                                            color: color, width: 2),
-                                      ),
-                                      child: Text(
-                                        '${pct.toStringAsFixed(0)}%',
-                                        style: TextStyle(
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.w800,
-                                            color: color),
+                                    SizedBox(
+                                      width: 54,
+                                      height: 54,
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          Positioned.fill(
+                                            child: CircularProgressIndicator(
+                                              value: (pct / 100).clamp(0, 1),
+                                              strokeWidth: 4,
+                                              strokeCap: StrokeCap.round,
+                                              color: color,
+                                              backgroundColor: color
+                                                  .withValues(alpha: 0.15),
+                                            ),
+                                          ),
+                                          Text(
+                                            '${pct.toStringAsFixed(0)}%',
+                                            style: TextStyle(
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w800,
+                                                color: color),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -386,19 +396,11 @@ class _AnalysisSheetState extends State<_AnalysisSheet> {
       controller: widget.scrollController,
       padding: const EdgeInsets.all(20),
       children: [
-        Center(
-          child: Container(
-            width: 36,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: scheme.outline,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        ),
-        const Text('Detailed Analysis',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+        Text('Detailed Analysis',
+            style: AppTheme.display(
+                fontSize: 19,
+                fontWeight: FontWeight.w700,
+                color: scheme.onSurface)),
         Text(widget.result.title,
             style: TextStyle(
                 fontSize: 12.5,

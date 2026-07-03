@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/app_colors.dart';
+import '../core/app_theme.dart';
 import '../models/resume_data.dart';
 import '../services/ats_scorer.dart';
 import 'common.dart';
@@ -23,7 +24,7 @@ class _AtsPanelState extends State<AtsPanel> {
       ? AppColors.success
       : pct >= 50
           ? AppColors.amber
-          : AppColors.accent;
+          : AppColors.danger;
 
   @override
   Widget build(BuildContext context) {
@@ -48,9 +49,11 @@ class _AtsPanelState extends State<AtsPanel> {
                     children: [
                       Row(
                         children: [
-                          const Text('ATS Score',
-                              style: TextStyle(
-                                  fontSize: 14, fontWeight: FontWeight.w800)),
+                          Text('ATS Score',
+                              style: AppTheme.display(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.onSurface)),
                           const SizedBox(width: 8),
                           Pill(label: b.gradeLabel, color: gradeColor),
                         ],
@@ -120,7 +123,7 @@ class _AtsPanelState extends State<AtsPanel> {
                       _keywordWrap(
                           'Missing (${b.keywords.missing.length})',
                           b.keywords.missing,
-                          AppColors.accent),
+                          AppColors.danger),
                     const SizedBox(height: 12),
                   ],
                   _details('Content Depth', b.depth.details),
@@ -179,7 +182,7 @@ class _AtsPanelState extends State<AtsPanel> {
                 ? AppColors.success
                 : item.startsWith('△')
                     ? AppColors.amber
-                    : AppColors.accent;
+                    : AppColors.danger;
             return Padding(
               padding: const EdgeInsets.only(bottom: 2),
               child: Text(item,

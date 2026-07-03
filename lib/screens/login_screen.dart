@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_colors.dart';
+import '../core/app_theme.dart';
 import '../core/theme_controller.dart';
 import '../services/auth_service.dart';
 import '../widgets/common.dart';
-import '../widgets/loading_dots.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -60,25 +60,24 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final theme = context.watch<ThemeController>();
+    final isDark = theme.isDark;
 
     return Scaffold(
       body: Stack(
         children: [
-          // Subtle radial accent glow behind the card.
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0, -0.2),
-                  radius: 1.1,
-                  colors: [
-                    AppColors.accent.withValues(alpha: 0.10),
-                    Colors.transparent,
-                  ],
+          // A single faint halo behind the logo — only on true-black dark.
+          if (isDark)
+            Positioned(
+              top: -140,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: _GlowBlob(
+                  color: Colors.white.withValues(alpha: 0.07),
+                  size: 420,
                 ),
               ),
             ),
-          ),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -88,131 +87,142 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo
-                      Image.asset(
-                        theme.isDark
-                            ? 'assets/logo_dark.png'
-                            : 'assets/logo.png',
-                        width: 110,
-                        height: 110,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'UNISHIP',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 4,
-                          color: scheme.onSurface,
+                      FadeSlideIn(
+                        child: Column(
+                          children: [
+                            Image.asset(
+                              isDark
+                                  ? 'assets/logo_dark.png'
+                                  : 'assets/logo.png',
+                              width: 96,
+                              height: 96,
+                              fit: BoxFit.contain,
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              'UniShip',
+                              style: AppTheme.display(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -1.1,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Your placement journey, all in one place',
+                              style: TextStyle(
+                                  fontSize: 13.5,
+                                  color:
+                                      scheme.onSurface.withValues(alpha: 0.5)),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Sign in to your Uniship account',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: scheme.onSurface.withValues(alpha: 0.5)),
-                      ),
-                      const SizedBox(height: 28),
-                      SurfaceCard(
-                        padding: const EdgeInsets.all(20),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              if (_error.isNotEmpty) ...[
-                                Container(
-                                  padding: const EdgeInsets.all(11),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.danger
-                                        .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                        color: AppColors.danger
-                                            .withValues(alpha: 0.3)),
+                      const SizedBox(height: 30),
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 90),
+                        child: SurfaceCard(
+                          padding: const EdgeInsets.all(22),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (_error.isNotEmpty) ...[
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.danger
+                                          .withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: AppColors.danger
+                                              .withValues(alpha: 0.3)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.error_outline_rounded,
+                                            size: 16, color: AppColors.danger),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(_error,
+                                              style: const TextStyle(
+                                                  fontSize: 12.5,
+                                                  color: AppColors.danger,
+                                                  fontWeight: FontWeight.w500)),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  child: Text(_error,
-                                      style: const TextStyle(
-                                          fontSize: 12.5,
-                                          color: AppColors.danger,
-                                          fontWeight: FontWeight.w500)),
+                                  const SizedBox(height: 16),
+                                ],
+                                const FieldLabel('Email'),
+                                TextFormField(
+                                  controller: _email,
+                                  keyboardType: TextInputType.emailAddress,
+                                  autofillHints: const [AutofillHints.email],
+                                  textInputAction: TextInputAction.next,
+                                  decoration: const InputDecoration(
+                                    hintText: 'you@university.edu',
+                                    prefixIcon: Icon(Icons.mail_outline_rounded,
+                                        size: 18),
+                                  ),
+                                  validator: (v) =>
+                                      (v == null || !v.contains('@'))
+                                          ? 'Enter a valid email'
+                                          : null,
                                 ),
                                 const SizedBox(height: 16),
-                              ],
-                              const FieldLabel('Email'),
-                              TextFormField(
-                                controller: _email,
-                                keyboardType: TextInputType.emailAddress,
-                                autofillHints: const [AutofillHints.email],
-                                textInputAction: TextInputAction.next,
-                                decoration: const InputDecoration(
-                                  hintText: 'you@university.edu',
-                                  prefixIcon:
-                                      Icon(Icons.mail_outline_rounded, size: 18),
-                                ),
-                                validator: (v) =>
-                                    (v == null || !v.contains('@'))
-                                        ? 'Enter a valid email'
-                                        : null,
-                              ),
-                              const SizedBox(height: 16),
-                              const FieldLabel('Password'),
-                              TextFormField(
-                                controller: _password,
-                                obscureText: _obscure,
-                                autofillHints: const [AutofillHints.password],
-                                onFieldSubmitted: (_) => _login(),
-                                decoration: InputDecoration(
-                                  hintText: '••••••••',
-                                  prefixIcon: const Icon(
-                                      Icons.lock_outline_rounded,
-                                      size: 18),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscure
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined,
-                                      size: 18,
-                                    ),
-                                    onPressed: () =>
-                                        setState(() => _obscure = !_obscure),
-                                  ),
-                                ),
-                                validator: (v) => (v == null || v.isEmpty)
-                                    ? 'Enter your password'
-                                    : null,
-                              ),
-                              const SizedBox(height: 22),
-                              FilledButton(
-                                onPressed: _loading ? null : _login,
-                                child: _loading
-                                    ? const SizedBox(
-                                        height: 20, child: LoadingDots(size: 6))
-                                    : const Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text('SIGN IN'),
-                                          SizedBox(width: 8),
-                                          Icon(Icons.arrow_forward_rounded,
-                                              size: 16),
-                                        ],
+                                const FieldLabel('Password'),
+                                TextFormField(
+                                  controller: _password,
+                                  obscureText: _obscure,
+                                  autofillHints: const [AutofillHints.password],
+                                  onFieldSubmitted: (_) => _login(),
+                                  decoration: InputDecoration(
+                                    hintText: '••••••••',
+                                    prefixIcon: const Icon(
+                                        Icons.lock_outline_rounded,
+                                        size: 18),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscure
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
+                                        size: 18,
                                       ),
-                              ),
-                            ],
+                                      onPressed: () =>
+                                          setState(() => _obscure = !_obscure),
+                                    ),
+                                  ),
+                                  validator: (v) => (v == null || v.isEmpty)
+                                      ? 'Enter your password'
+                                      : null,
+                                ),
+                                const SizedBox(height: 22),
+                                GradientButton(
+                                  label: 'Sign In',
+                                  icon: Icons.arrow_forward_rounded,
+                                  loading: _loading,
+                                  onPressed: _loading ? null : _login,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'POWERED BY UNISHIP',
-                        style: TextStyle(
-                          fontSize: 10,
-                          letterSpacing: 2.5,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.onSurface.withValues(alpha: 0.3),
+                      const SizedBox(height: 26),
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 180),
+                        child: Text(
+                          'POWERED BY UNISHIP',
+                          style: TextStyle(
+                            fontSize: 10,
+                            letterSpacing: 2.5,
+                            fontWeight: FontWeight.w600,
+                            color: scheme.onSurface.withValues(alpha: 0.3),
+                          ),
                         ),
                       ),
                     ],
@@ -227,10 +237,10 @@ class _LoginScreenState extends State<LoginScreen> {
             right: 8,
             child: SafeArea(
               child: IconButton(
-                tooltip: theme.isDark ? 'Light mode' : 'Dark mode',
+                tooltip: isDark ? 'Light mode' : 'Dark mode',
                 onPressed: theme.toggle,
                 icon: Icon(
-                  theme.isDark
+                  isDark
                       ? Icons.light_mode_outlined
                       : Icons.dark_mode_outlined,
                   size: 20,
@@ -239,6 +249,30 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Soft circular gradient glow used as ambient background light.
+class _GlowBlob extends StatelessWidget {
+  final Color color;
+  final double size;
+
+  const _GlowBlob({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, color.withValues(alpha: 0)],
+          ),
+        ),
       ),
     );
   }

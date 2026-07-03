@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_config.dart';
+import '../../core/app_theme.dart';
 import '../../models/resume_data.dart';
 import '../../services/auth_service.dart';
 import '../../services/groq_service.dart';
@@ -282,21 +283,35 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                        horizontal: 9, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      borderRadius: BorderRadius.circular(5),
+                      gradient:
+                          AppColors.glossy(Theme.of(context).brightness),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Text('AI',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome_rounded,
+                            size: 10,
+                            color: AppColors.onGlossy(
+                                Theme.of(context).brightness)),
+                        const SizedBox(width: 4),
+                        Text('AI',
+                            style: TextStyle(
+                                color: AppColors.onGlossy(
+                                    Theme.of(context).brightness),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800)),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  const Text('Tailor for a Job',
-                      style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 9),
+                  Text('Tailor for a Job',
+                      style: AppTheme.display(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onSurface)),
                 ],
               ),
               const SizedBox(height: 6),
@@ -322,18 +337,13 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
                     const InputDecoration(hintText: 'Paste the full JD here…'),
               ),
               const SizedBox(height: 14),
-              FilledButton.icon(
+              GradientButton(
+                label: _generating
+                    ? 'Analyzing JD & tailoring…'
+                    : 'Generate Tailored Resume',
+                icon: Icons.auto_awesome_rounded,
+                loading: _generating,
                 onPressed: _generating ? null : _generate,
-                icon: _generating
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.auto_awesome_rounded, size: 16),
-                label: Text(_generating
-                    ? 'ANALYZING JD & TAILORING…'
-                    : 'GENERATE TAILORED RESUME'),
               ),
             ],
           ),
@@ -396,9 +406,11 @@ class _ResumeBuilderScreenState extends State<ResumeBuilderScreen> {
         const SizedBox(height: 6),
         ResumePreview(data: _resume, keywords: _keywords),
         const SizedBox(height: 16),
-        FilledButton(
+        GradientButton(
+          label: 'Save Resume',
+          icon: Icons.save_outlined,
+          loading: _saving,
           onPressed: _saving ? null : _save,
-          child: Text(_saving ? 'SAVING…' : 'SAVE RESUME'),
         ),
         const SizedBox(height: 24),
       ],

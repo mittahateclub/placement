@@ -108,11 +108,12 @@ class _ResumeDetailScreenState extends State<ResumeDetailScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _exporting ? null : _export,
         icon: _exporting
-            ? const SizedBox(
+            ? SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white))
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.onPrimary))
             : const Icon(Icons.download_rounded),
         label: Text(_exporting ? 'Generating…' : 'Download PDF'),
       ),
@@ -158,9 +159,8 @@ class _EditorSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
             child: Row(
               children: [
-                const Text('Edit Resume',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                Text('Edit Resume',
+                    style: Theme.of(context).textTheme.headlineSmall),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../core/format.dart';
 import '../../core/student_filters.dart';
 import '../../services/auth_service.dart';
@@ -425,10 +426,10 @@ class _EventsScreenState extends State<EventsScreen> {
                           width: 14,
                           height: 14,
                           child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.auto_awesome_rounded, size: 15),
+                      : const Icon(Icons.auto_awesome_rounded,
+                          size: 15, color: AppColors.accent),
                   label: Text(
-                      _scraping ? 'READING PAGE…' : 'AUTO-FILL FROM LINK',
-                      style: const TextStyle(letterSpacing: 0.5)),
+                      _scraping ? 'Reading page…' : 'Auto-fill from link'),
                 ),
                 if (_scrapeNote != null) ...[
                   const SizedBox(height: 10),
@@ -670,9 +671,11 @@ class _EventsScreenState extends State<EventsScreen> {
                   onChanged: (v) => setState(() => _minGpa = v),
                 ),
                 const SizedBox(height: 16),
-                FilledButton(
+                GradientButton(
+                  label: 'Post Event',
+                  icon: Icons.campaign_outlined,
+                  loading: _submitting,
                   onPressed: _submitting ? null : _submit,
-                  child: Text(_submitting ? 'POSTING…' : 'POST EVENT'),
                 ),
               ],
             ),
@@ -683,7 +686,7 @@ class _EventsScreenState extends State<EventsScreen> {
         // ── Existing events ──
         // Students stop seeing an event the moment it expires; here it
         // stays editable for a 10-day grace window, then drops off too.
-        const FieldLabel('Existing Events'),
+        const SectionHeader('Existing Events'),
         if (_loadingEvents)
           const Padding(
               padding: EdgeInsets.all(24), child: Center(child: LoadingDots()))
@@ -714,14 +717,23 @@ class _EventsScreenState extends State<EventsScreen> {
                   children: [
                     if (d != null)
                       Container(
-                        width: 40,
+                        width: 42,
                         margin: const EdgeInsets.only(right: 10),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          color: scheme.primary.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(11),
+                          border: Border.all(
+                              color:
+                                  scheme.primary.withValues(alpha: 0.08)),
+                        ),
                         child: Column(
                           children: [
                             Text('${d.day}',
-                                style: const TextStyle(
+                                style: AppTheme.display(
                                     fontSize: 15,
-                                    fontWeight: FontWeight.w800)),
+                                    fontWeight: FontWeight.w700,
+                                    color: scheme.onSurface)),
                             Text(
                               DateFormat('MMM').format(d).toUpperCase(),
                               style: TextStyle(
@@ -729,7 +741,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 1.2,
                                   color: scheme.onSurface
-                                      .withValues(alpha: 0.35)),
+                                      .withValues(alpha: 0.5)),
                             ),
                           ],
                         ),
@@ -741,9 +753,10 @@ class _EventsScreenState extends State<EventsScreen> {
                           Text((data['title'] as String?) ?? 'Untitled',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700)),
+                              style: AppTheme.display(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.onSurface)),
                           const SizedBox(height: 2),
                           Text((data['location'] as String?) ?? '',
                               maxLines: 1,

@@ -118,9 +118,11 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
               TextField(
                   controller: _phone, keyboardType: TextInputType.phone),
               const SizedBox(height: 16),
-              FilledButton(
+              GradientButton(
+                label: 'Save Changes',
+                icon: Icons.check_rounded,
+                loading: _saving,
                 onPressed: _saving ? null : _save,
-                child: Text(_saving ? 'SAVING…' : 'SAVE CHANGES'),
               ),
             ],
           ),

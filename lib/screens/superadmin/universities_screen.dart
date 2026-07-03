@@ -81,9 +81,8 @@ class _UniversitiesScreenState extends State<UniversitiesScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('Register University',
-                  style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              Text('Register University',
+                  style: Theme.of(sheetContext).textTheme.headlineSmall),
               const SizedBox(height: 16),
               const FieldLabel('University Name *'),
               TextField(
@@ -107,7 +106,10 @@ class _UniversitiesScreenState extends State<UniversitiesScreen> {
                     const InputDecoration(hintText: 'e.g. harvard.edu'),
               ),
               const SizedBox(height: 18),
-              FilledButton(
+              GradientButton(
+                label: 'Register University',
+                icon: Icons.account_balance_outlined,
+                loading: creating,
                 onPressed: creating
                     ? null
                     : () async {
@@ -153,8 +155,6 @@ class _UniversitiesScreenState extends State<UniversitiesScreen> {
                           setSheetState(() => creating = false);
                         }
                       },
-                child: Text(
-                    creating ? 'REGISTERING…' : 'REGISTER UNIVERSITY'),
               ),
             ],
           ),

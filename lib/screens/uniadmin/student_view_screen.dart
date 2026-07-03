@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../widgets/common.dart';
 
 /// Read-only full profile of one student (admin view).
@@ -42,8 +43,10 @@ class StudentViewScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(name,
-                      style: const TextStyle(
-                          fontSize: 17, fontWeight: FontWeight.w800)),
+                      style: AppTheme.display(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSurface)),
                   if ((data['title'] ?? '') != '') ...[
                     const SizedBox(height: 3),
                     Text(data['title'].toString(),
@@ -147,9 +150,7 @@ class StudentViewScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w800)),
+            SectionHeader(title, padding: EdgeInsets.zero),
             const SizedBox(height: 10),
             ...entries.map((e) => Padding(
                   padding: const EdgeInsets.only(bottom: 6),
@@ -187,9 +188,7 @@ class StudentViewScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w800)),
+            SectionHeader(title, padding: EdgeInsets.zero),
             const SizedBox(height: 8),
             Text(text,
                 style: TextStyle(
@@ -213,9 +212,7 @@ class StudentViewScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w800)),
+            SectionHeader(title, padding: EdgeInsets.zero),
             const SizedBox(height: 10),
             Wrap(
               spacing: 6,
@@ -241,9 +238,7 @@ class StudentViewScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w800)),
+            SectionHeader(title, padding: EdgeInsets.zero),
             const SizedBox(height: 10),
             ...entries.map((e) {
               final parts = lines(e)

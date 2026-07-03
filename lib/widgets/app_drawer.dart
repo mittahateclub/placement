@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_colors.dart';
+import '../core/app_theme.dart';
 import '../core/theme_controller.dart';
 import '../screens/home_shell.dart';
 import '../services/auth_service.dart';
@@ -42,13 +43,13 @@ class AppDrawer extends StatelessWidget {
       if (page.group != null && page.group != lastGroup) {
         lastGroup = page.group;
         navItems.add(Padding(
-          padding: const EdgeInsets.fromLTRB(12, 14, 12, 6),
+          padding: const EdgeInsets.fromLTRB(14, 18, 14, 8),
           child: Text(
             page.group!.toUpperCase(),
             style: TextStyle(
               fontSize: 9.5,
               fontWeight: FontWeight.w800,
-              letterSpacing: 1.6,
+              letterSpacing: 1.8,
               color: scheme.onSurface.withValues(alpha: 0.32),
             ),
           ),
@@ -63,118 +64,138 @@ class AppDrawer extends StatelessWidget {
     }
 
     return Drawer(
-      width: 296,
+      width: 300,
       child: SafeArea(
         child: Column(
           children: [
             // ── Brand strip ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 6),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
               child: Row(
                 children: [
                   Image.asset(
                     theme.isDark
                         ? 'assets/logo_dark.png'
                         : 'assets/logo.png',
-                    width: 40,
-                    height: 40,
+                    width: 38,
+                    height: 38,
                     fit: BoxFit.contain,
                   ),
-                  const SizedBox(width: 9),
+                  const SizedBox(width: 10),
                   Text(
-                    'UNISHIP',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2.5,
+                    'UniShip',
+                    style: AppTheme.display(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.7,
                       color: scheme.onSurface,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 6),
-            // ── User header ──
+            const SizedBox(height: 10),
+            // ── User card ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: AppColors.accent.withValues(alpha: 0.15),
-                    backgroundImage: auth.userPhotoUrl != null
-                        ? NetworkImage(auth.userPhotoUrl!)
-                        : null,
-                    child: auth.userPhotoUrl == null
-                        ? Text(
-                            displayName.substring(0, 1).toUpperCase(),
-                            style: const TextStyle(
-                                color: AppColors.accent,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 18),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontSize: 14.5, fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 3),
-                        Row(
-                          children: [
-                            Pill(
-                                label: _roleLabel(auth),
-                                color: AppColors.accent),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (auth.universityName != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              child: Container(
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                      color: scheme.primary.withValues(alpha: 0.10)),
+                ),
                 child: Row(
                   children: [
-                    Icon(Icons.account_balance_outlined,
-                        size: 13,
-                        color: scheme.onSurface.withValues(alpha: 0.4)),
-                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        gradient:
+                            AppColors.glossy(Theme.of(context).brightness),
+                        shape: BoxShape.circle,
+                      ),
+                      child: CircleAvatar(
+                        radius: 22,
+                        backgroundColor: scheme.surfaceContainer,
+                        backgroundImage: auth.userPhotoUrl != null
+                            ? NetworkImage(auth.userPhotoUrl!)
+                            : null,
+                        child: auth.userPhotoUrl == null
+                            ? Text(
+                                displayName.substring(0, 1).toUpperCase(),
+                                style: AppTheme.display(
+                                    color: scheme.onSurface,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 18),
+                              )
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        auth.universityName!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 11.5,
-                            color: scheme.onSurface.withValues(alpha: 0.5)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTheme.display(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: scheme.onSurface)),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Pill(
+                                  label: _roleLabel(auth),
+                                  color: AppColors.accent),
+                            ],
+                          ),
+                          if (auth.universityName != null) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Icon(Icons.account_balance_outlined,
+                                    size: 12,
+                                    color: scheme.onSurface
+                                        .withValues(alpha: 0.4)),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: Text(
+                                    auth.universityName!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: scheme.onSurface
+                                            .withValues(alpha: 0.5)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            const Divider(),
+            ),
 
             // ── Nav items ──
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 children: navItems,
               ),
             ),
 
-            const Divider(),
+            Divider(color: scheme.outline.withValues(alpha: 0.6)),
             // ── Footer ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: Column(
                 children: [
                   _DrawerTile(
@@ -231,42 +252,58 @@ class _DrawerTile extends StatelessWidget {
         ? AppColors.danger
         : selected
             ? scheme.primary
-            : scheme.onSurface.withValues(alpha: 0.65);
+            : scheme.onSurface.withValues(alpha: 0.62);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1.5),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
-        color: selected
-            ? scheme.primary.withValues(alpha: 0.1)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(13),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            child: Row(
-              children: [
-                Icon(icon, size: 19, color: color),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w500,
-                      color: danger
-                          ? AppColors.danger
-                          : selected
-                              ? scheme.primary
-                              : scheme.onSurface.withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(13),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: selected
+                  ? scheme.primary.withValues(alpha: 0.08)
+                  : null,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 13, vertical: 11.5),
+              child: Row(
+                children: [
+                  Icon(icon, size: 19, color: color),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
+                        color: danger
+                            ? AppColors.danger
+                            : selected
+                                ? scheme.primary
+                                : scheme.onSurface.withValues(alpha: 0.85),
+                      ),
                     ),
                   ),
-                ),
-                if (trailing != null)
-                  SizedBox(height: 24, child: FittedBox(child: trailing)),
-              ],
+                  if (selected && trailing == null)
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: scheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  if (trailing != null)
+                    SizedBox(height: 24, child: FittedBox(child: trailing)),
+                ],
+              ),
             ),
           ),
         ),
@@ -274,4 +311,3 @@ class _DrawerTile extends StatelessWidget {
     );
   }
 }
-

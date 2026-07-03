@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/app_colors.dart';
+import '../core/app_theme.dart';
 import '../core/format.dart';
 import '../screens/student/resume_builder_screen.dart';
 import '../services/auth_service.dart';
@@ -230,10 +231,11 @@ class _EventPostCardState extends State<EventPostCard> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(title,
-                    style: const TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2)),
+                    style: AppTheme.display(
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.3,
+                        color: scheme.onSurface)),
                 TypeBadge(type: type),
               ],
             ),
@@ -249,21 +251,24 @@ class _EventPostCardState extends State<EventPostCard> {
           // ── Image (only when the scrape found one) ──
           if (imageUrl != null && imageUrl.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Image.network(
-                imageUrl,
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
-                loadingBuilder: (_, child, progress) => progress == null
-                    ? child
-                    : Container(
-                        height: 200,
-                        color: scheme.surfaceContainerLow,
-                        alignment: Alignment.center,
-                        child: const LoadingDots(size: 6),
-                      ),
-                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 200,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (_, child, progress) => progress == null
+                      ? child
+                      : Container(
+                          height: 200,
+                          color: scheme.surfaceContainerLow,
+                          alignment: Alignment.center,
+                          child: const LoadingDots(size: 6),
+                        ),
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                ),
               ),
             ),
           // ── Caption ──
@@ -344,11 +349,11 @@ class _EventPostCardState extends State<EventPostCard> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       textStyle: const TextStyle(
                           fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0),
                     ),
                     icon: const Icon(Icons.description_outlined, size: 13),
-                    label: const Text('RESUME'),
+                    label: const Text('Resume'),
                   ),
                   const SizedBox(width: 8),
                 ],
@@ -360,11 +365,11 @@ class _EventPostCardState extends State<EventPostCard> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       textStyle: const TextStyle(
                           fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0),
                     ),
                     icon: const Icon(Icons.arrow_forward_rounded, size: 13),
-                    label: const Text('VIEW'),
+                    label: const Text('View'),
                   )
                 else if (link != null && link.isNotEmpty)
                   FilledButton.icon(
@@ -374,11 +379,11 @@ class _EventPostCardState extends State<EventPostCard> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       textStyle: const TextStyle(
                           fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0),
                     ),
                     icon: const Icon(Icons.open_in_new_rounded, size: 13),
-                    label: const Text('APPLY'),
+                    label: const Text('Apply'),
                   )
                 else if (_applied || widget.applied)
                   FilledButton.icon(
@@ -391,11 +396,11 @@ class _EventPostCardState extends State<EventPostCard> {
                       disabledForegroundColor: AppColors.success,
                       textStyle: const TextStyle(
                           fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0),
                     ),
                     icon: const Icon(Icons.check_rounded, size: 14),
-                    label: const Text('APPLIED'),
+                    label: const Text('Applied'),
                   )
                 else
                   FilledButton.icon(
@@ -405,17 +410,17 @@ class _EventPostCardState extends State<EventPostCard> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       textStyle: const TextStyle(
                           fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0),
                     ),
                     icon: _applying
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 12,
                             height: 12,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
+                                strokeWidth: 2, color: scheme.onPrimary))
                         : const Icon(Icons.send_rounded, size: 13),
-                    label: const Text('APPLY'),
+                    label: const Text('Apply'),
                   ),
               ],
             ),
@@ -486,20 +491,13 @@ class _EventCommentsSheetState extends State<EventCommentsSheet> {
         height: MediaQuery.of(context).size.height * 0.62,
         child: Column(
           children: [
-            const SizedBox(height: 10),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: scheme.onSurface.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
               child: Text('Comments',
-                  style:
-                      TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+                  style: AppTheme.display(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurface)),
             ),
             Divider(color: scheme.outline),
             Expanded(

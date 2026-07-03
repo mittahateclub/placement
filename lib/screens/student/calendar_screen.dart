@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../core/format.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common.dart';
@@ -190,8 +191,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         child: Text(
                           DateFormat('MMMM yyyy').format(_currentMonth),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w800),
+                          style: AppTheme.display(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface),
                         ),
                       ),
                       IconButton(
@@ -359,8 +362,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                     ),
                     Text('$count',
-                        style: const TextStyle(
-                            fontSize: 17, fontWeight: FontWeight.w800)),
+                        style: AppTheme.display(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: scheme.onSurface)),
                   ],
                 ),
               );
@@ -414,7 +419,7 @@ class _DayCell extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isToday
-                    ? AppColors.accent
+                    ? scheme.primary
                     : isSelected
                         ? AppColors.blue
                         : Colors.transparent,
@@ -424,9 +429,11 @@ class _DayCell extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: (isToday || isSelected)
-                      ? Colors.white
-                      : scheme.onSurface,
+                  color: isToday
+                      ? scheme.onPrimary
+                      : isSelected
+                          ? Colors.white
+                          : scheme.onSurface,
                 ),
               ),
             ),
@@ -555,17 +562,35 @@ class _EventTile extends StatelessWidget {
                               color:
                                   scheme.onSurface.withValues(alpha: 0.4))),
                     if (event.location != null)
-                      Text('📍 ${event.location}',
-                          style: TextStyle(
-                              fontSize: 10,
-                              color:
-                                  scheme.onSurface.withValues(alpha: 0.4))),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.place_outlined,
+                              size: 11,
+                              color: scheme.onSurface.withValues(alpha: 0.4)),
+                          const SizedBox(width: 3),
+                          Text('${event.location}',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: scheme.onSurface
+                                      .withValues(alpha: 0.4))),
+                        ],
+                      ),
                     if (event.company != null)
-                      Text('🏢 ${event.company}',
-                          style: TextStyle(
-                              fontSize: 10,
-                              color:
-                                  scheme.onSurface.withValues(alpha: 0.4))),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.business_rounded,
+                              size: 11,
+                              color: scheme.onSurface.withValues(alpha: 0.4)),
+                          const SizedBox(width: 3),
+                          Text('${event.company}',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: scheme.onSurface
+                                      .withValues(alpha: 0.4))),
+                        ],
+                      ),
                   ],
                 ),
               ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../core/format.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common.dart';
@@ -125,9 +126,10 @@ class _TestsScreenState extends State<TestsScreen> {
                         children: [
                           Expanded(
                             child: Text(title,
-                                style: const TextStyle(
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.w700)),
+                                style: AppTheme.display(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: scheme.onSurface)),
                           ),
                           Pill(
                             label: approved ? 'Approved' : 'Not Approved',

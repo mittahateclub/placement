@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../core/format.dart';
 import '../../core/student_filters.dart';
 import '../../models/college_item.dart';
@@ -243,15 +244,15 @@ class _CollegeSpaceScreenState extends State<CollegeSpaceScreen> {
                 color: _showSaved
                     ? AppColors.blue.withValues(alpha: 0.12)
                     : scheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(15),
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(15),
                   onTap: () => setState(() => _showSaved = !_showSaved),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 13),
+                        horizontal: 13, vertical: 14),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(15),
                       border: Border.all(
                           color: _showSaved
                               ? AppColors.blue.withValues(alpha: 0.4)
@@ -371,20 +372,29 @@ class _ListingCard extends StatelessWidget {
           // Date badge
           if (d != null)
             Container(
-              width: 44,
+              width: 46,
               margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              decoration: BoxDecoration(
+                color: scheme.primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: scheme.primary.withValues(alpha: 0.08)),
+              ),
               child: Column(
                 children: [
                   Text('${d.day}',
-                      style: const TextStyle(
-                          fontSize: 17, fontWeight: FontWeight.w800)),
+                      style: AppTheme.display(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSurface)),
                   Text(
                     formatDate(d).split(' ').first.toUpperCase(),
                     style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: 1.5,
-                        color: scheme.onSurface.withValues(alpha: 0.35)),
+                        letterSpacing: 1.2,
+                        color: scheme.onSurface.withValues(alpha: 0.5)),
                   ),
                 ],
               ),
@@ -409,8 +419,11 @@ class _ListingCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 7),
                 Text(item.title,
-                    style: const TextStyle(
-                        fontSize: 14.5, fontWeight: FontWeight.w700)),
+                    style: AppTheme.display(
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                        color: scheme.onSurface)),
                 if (item.description.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -482,11 +495,11 @@ class _ListingCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       textStyle: const TextStyle(
                           fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0),
                     ),
                     icon: const Icon(Icons.description_outlined, size: 13),
-                    label: const Text('RESUME'),
+                    label: const Text('Resume'),
                   ),
                   const SizedBox(width: 8),
                 ],
@@ -503,11 +516,11 @@ class _ListingCard extends StatelessWidget {
                             disabledForegroundColor: AppColors.success,
                             textStyle: const TextStyle(
                                 fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6),
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0),
                           ),
                           icon: const Icon(Icons.check_rounded, size: 14),
-                          label: const Text('APPLIED'),
+                          label: const Text('Applied'),
                         )
                       : FilledButton.icon(
                           onPressed: applying ? null : onApply,
@@ -517,21 +530,22 @@ class _ListingCard extends StatelessWidget {
                                 const EdgeInsets.symmetric(horizontal: 14),
                             textStyle: const TextStyle(
                                 fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6),
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0),
                           ),
                           icon: applying
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 12,
                                   height: 12,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white))
+                                      strokeWidth: 2,
+                                      color: scheme.onPrimary))
                               : Icon(
                                   (item.link?.isNotEmpty ?? false)
                                       ? Icons.open_in_new_rounded
                                       : Icons.send_rounded,
                                   size: 13),
-                          label: const Text('APPLY'),
+                          label: const Text('Apply'),
                         ),
               ],
             ),
@@ -543,8 +557,15 @@ class _ListingCard extends StatelessWidget {
     if (!highlighted) return card;
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.accent, width: 1.5),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: scheme.primary, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: card,
     );

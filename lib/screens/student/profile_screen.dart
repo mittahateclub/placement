@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../core/student_filters.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common.dart';
@@ -263,23 +264,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    CircleAvatar(
-                      radius: 44,
-                      backgroundColor:
-                          AppColors.accent.withValues(alpha: 0.15),
-                      backgroundImage:
-                          _photoUrl != null ? NetworkImage(_photoUrl!) : null,
-                      child: _photoUrl == null
-                          ? Text(
-                              (user?.email ?? 'U')
-                                  .substring(0, 1)
-                                  .toUpperCase(),
-                              style: const TextStyle(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.accent),
-                            )
-                          : null,
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        gradient:
+                            AppColors.glossy(Theme.of(context).brightness),
+                        shape: BoxShape.circle,
+                      ),
+                      child: CircleAvatar(
+                        radius: 42,
+                        backgroundColor: scheme.surfaceContainer,
+                        backgroundImage: _photoUrl != null
+                            ? NetworkImage(_photoUrl!)
+                            : null,
+                        child: _photoUrl == null
+                            ? Text(
+                                (user?.email ?? 'U')
+                                    .substring(0, 1)
+                                    .toUpperCase(),
+                                style: AppTheme.display(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w700,
+                                    color: scheme.onSurface),
+                              )
+                            : null,
+                      ),
                     ),
                     if (_uploadProgress != null)
                       CircularProgressIndicator(value: _uploadProgress),
@@ -287,15 +296,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       bottom: 0,
                       right: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                          color: AppColors.accent,
+                          gradient:
+                              AppColors.glossy(Theme.of(context).brightness),
                           shape: BoxShape.circle,
                           border: Border.all(
                               color: scheme.surfaceContainer, width: 2),
                         ),
-                        child: const Icon(Icons.photo_camera_outlined,
-                            size: 13, color: Colors.white),
+                        child: Icon(Icons.photo_camera_outlined,
+                            size: 13,
+                            color: AppColors.onGlossy(
+                                Theme.of(context).brightness)),
                       ),
                     ),
                   ],
@@ -306,8 +318,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _name.text.isNotEmpty
                     ? _name.text
                     : user?.email?.split('@').first ?? 'Student',
-                style: const TextStyle(
-                    fontSize: 17, fontWeight: FontWeight.w800),
+                style: AppTheme.display(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.4,
+                    color: scheme.onSurface),
               ),
               const SizedBox(height: 3),
               Text(
@@ -486,9 +501,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
 
         const SizedBox(height: 16),
-        FilledButton(
+        GradientButton(
+          label: 'Save Profile Changes',
+          icon: Icons.check_rounded,
+          loading: _saving,
           onPressed: _saving ? null : _save,
-          child: Text(_saving ? 'SAVING…' : 'SAVE PROFILE CHANGES'),
         ),
         const SizedBox(height: 24),
       ],
@@ -527,9 +544,7 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style:
-                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+          SectionHeader(title, padding: EdgeInsets.zero),
           const SizedBox(height: 14),
           ...children,
         ],
@@ -581,8 +596,10 @@ class _EntriesSectionState extends State<_EntriesSection> {
                   children: [
                     Expanded(
                       child: Text(widget.title,
-                          style: const TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w700)),
+                          style: AppTheme.display(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface)),
                     ),
                     if (widget.entries.isNotEmpty)
                       Container(

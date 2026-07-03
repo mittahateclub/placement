@@ -43,16 +43,26 @@ class MessageBubble extends StatelessWidget {
     final fileName = data['fileName'] as String?;
     final time = toDate(data['createdAt']);
 
+    // Own messages get the glossy ink/porcelain fill; internal notes stay
+    // amber-tinted; incoming messages sit on a raised surface.
+    final brightness = Theme.of(context).brightness;
+    final isGlossy = mine && !internal;
     final bg = internal
         ? AppColors.amber.withValues(alpha: 0.12)
         : mine
-            ? scheme.primary.withValues(alpha: 0.14)
+            ? null
             : scheme.surfaceContainerLow;
     final border = internal
         ? AppColors.amber.withValues(alpha: 0.45)
         : mine
-            ? scheme.primary.withValues(alpha: 0.25)
+            ? null
             : scheme.outline;
+    final fg = isGlossy
+        ? AppColors.onGlossy(brightness)
+        : scheme.onSurface.withValues(alpha: 0.85);
+    final fgMuted = isGlossy
+        ? AppColors.onGlossy(brightness).withValues(alpha: 0.55)
+        : scheme.onSurface.withValues(alpha: 0.35);
 
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
@@ -63,12 +73,13 @@ class MessageBubble extends StatelessWidget {
             maxWidth: MediaQuery.of(context).size.width * 0.74),
         decoration: BoxDecoration(
           color: bg,
-          border: Border.all(color: border),
+          gradient: isGlossy ? AppColors.glossy(brightness) : null,
+          border: border != null ? Border.all(color: border) : null,
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(14),
-            topRight: const Radius.circular(14),
-            bottomLeft: Radius.circular(mine ? 14 : 4),
-            bottomRight: Radius.circular(mine ? 4 : 14),
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(mine ? 16 : 5),
+            bottomRight: Radius.circular(mine ? 5 : 16),
           ),
         ),
         child: Column(
@@ -105,26 +116,19 @@ class MessageBubble extends StatelessWidget {
               ),
             if (text.isNotEmpty)
               Text(text,
-                  style: TextStyle(
-                      fontSize: 13,
-                      height: 1.4,
-                      color: scheme.onSurface.withValues(alpha: 0.85))),
+                  style: TextStyle(fontSize: 13, height: 1.4, color: fg)),
             const SizedBox(height: 3),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(timeAgo(time),
-                    style: TextStyle(
-                        fontSize: 9.5,
-                        color: scheme.onSurface.withValues(alpha: 0.35))),
+                    style: TextStyle(fontSize: 9.5, color: fgMuted)),
                 if (mine && !internal) ...[
                   const SizedBox(width: 4),
                   Icon(
                     seen ? Icons.done_all_rounded : Icons.done_rounded,
                     size: 12,
-                    color: seen
-                        ? scheme.primary
-                        : scheme.onSurface.withValues(alpha: 0.35),
+                    color: seen ? fg : fgMuted,
                   ),
                 ],
               ],
@@ -406,18 +410,45 @@ class _ChatComposerState extends State<ChatComposer> {
                     onSubmitted: (_) => _sendText(),
                   ),
                 ),
-                const SizedBox(width: 4),
-                IconButton(
-                  onPressed: _sending ? null : _sendText,
-                  icon: _sending
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : Icon(Icons.send_rounded,
-                          size: 21,
-                          color: _internal ? AppColors.amber : scheme.primary),
+                const SizedBox(width: 6),
+                Material(
+                  color: Colors.transparent,
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: Ink(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      gradient: _internal
+                          ? null
+                          : AppColors.glossy(Theme.of(context).brightness),
+                      color: _internal ? AppColors.amber : null,
+                      shape: BoxShape.circle,
+                    ),
+                    child: InkWell(
+                      onTap: _sending ? null : _sendText,
+                      child: Center(
+                        child: _sending
+                            ? SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: _internal
+                                        ? Colors.white
+                                        : AppColors.onGlossy(
+                                            Theme.of(context).brightness)))
+                            : Icon(Icons.send_rounded,
+                                size: 18,
+                                color: _internal
+                                    ? Colors.white
+                                    : AppColors.onGlossy(
+                                        Theme.of(context).brightness)),
+                      ),
+                    ),
+                  ),
                 ),
+                const SizedBox(width: 2),
               ],
             ),
           ],

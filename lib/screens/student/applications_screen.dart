@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../core/format.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common.dart';
@@ -110,9 +111,11 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                             const SizedBox(height: 5),
                             Text(
                               (app['internshipRole'] as String?) ?? 'Role',
-                              style: const TextStyle(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w700),
+                              style: AppTheme.display(
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.2,
+                                  color: scheme.onSurface),
                             ),
                             const SizedBox(height: 5),
                             Row(

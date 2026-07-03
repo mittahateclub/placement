@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../widgets/common.dart';
 
 class SuperadminDashboard extends StatefulWidget {
@@ -87,17 +88,32 @@ class _SuperadminDashboardState extends State<SuperadminDashboard> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Super Admin',
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5)),
-          const SizedBox(height: 4),
-          Text('System-wide overview of the UniShip platform',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: scheme.onSurface.withValues(alpha: 0.5))),
-          const SizedBox(height: 16),
+          FadeSlideIn(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('SUPER ADMIN',
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.6,
+                        color: AppColors.accent)),
+                const SizedBox(height: 5),
+                Text('Platform Overview',
+                    style: AppTheme.display(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.6,
+                        color: scheme.onSurface)),
+                const SizedBox(height: 4),
+                Text('System-wide overview of the UniShip platform',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: scheme.onSurface.withValues(alpha: 0.5))),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
           Row(
             children: [
               Expanded(
@@ -129,32 +145,27 @@ class _SuperadminDashboardState extends State<SuperadminDashboard> {
             ],
           ),
           const SizedBox(height: 14),
-          ...tools.map((tool) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+          ...tools.indexed.map((entry) {
+            final (i, tool) = entry;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: FadeSlideIn(
+                delay: Duration(milliseconds: 80 + i * 40),
                 child: SurfaceCard(
                   onTap: () => widget.onNavigate(tool.$4),
                   child: Row(
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: scheme.surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: scheme.outline),
-                        ),
-                        child:
-                            Icon(tool.$3, size: 18, color: AppColors.accent),
-                      ),
+                      GlossyIconChip(icon: tool.$3),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(tool.$1,
-                                style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700)),
+                                style: AppTheme.display(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: scheme.onSurface)),
                             const SizedBox(height: 2),
                             Text(tool.$2,
                                 style: TextStyle(
@@ -170,7 +181,9 @@ class _SuperadminDashboardState extends State<SuperadminDashboard> {
                     ],
                   ),
                 ),
-              )),
+              ),
+            );
+          }),
           const SizedBox(height: 24),
         ],
       ),

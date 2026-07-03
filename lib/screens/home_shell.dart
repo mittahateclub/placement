@@ -320,7 +320,19 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       drawerEdgeDragWidth: 64,
       body: SafeArea(
         child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 260),
+          switchInCurve: const Cubic(0.16, 1, 0.3, 1),
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.015),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          ),
           child: KeyedSubtree(
             key: ValueKey(selected.id),
             child: selected.build(_navigate),

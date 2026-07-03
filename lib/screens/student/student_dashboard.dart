@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../core/format.dart';
 import '../../core/student_filters.dart';
 import '../../services/auth_service.dart';
@@ -243,105 +244,148 @@ class _StudentDashboardState extends State<StudentDashboard> {
         .split(RegExp(r'[ @]'))
         .first;
 
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? 'Good morning'
+        : hour < 17
+            ? 'Good afternoon'
+            : 'Good evening';
+
     return RefreshIndicator(
       onRefresh: _fetch,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Hey, $firstName 👋',
-              style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5)),
-          const SizedBox(height: 4),
-          Text(
-            'Here is what is happening on campus',
-            style: TextStyle(
-                fontSize: 13, color: scheme.onSurface.withValues(alpha: 0.5)),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Today's events → Calendar ──
-          SurfaceCard(
-            onTap: () => widget.onNavigate('calendar'),
+          FadeSlideIn(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today_outlined,
-                        size: 14, color: AppColors.accent),
-                    const SizedBox(width: 7),
-                    const Text("Today's Events",
-                        style: TextStyle(
-                            fontSize: 13.5, fontWeight: FontWeight.w800)),
-                    const SizedBox(width: 8),
-                    Text(formatDayDate(DateTime.now()),
-                        style: TextStyle(
-                            fontSize: 11,
-                            color: scheme.onSurface.withValues(alpha: 0.4))),
-                    const Spacer(),
-                    Icon(Icons.chevron_right_rounded,
-                        size: 18,
-                        color: scheme.onSurface.withValues(alpha: 0.35)),
-                  ],
+                Text(greeting.toUpperCase(),
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.6,
+                        color: AppColors.accent)),
+                const SizedBox(height: 5),
+                Text(firstName,
+                    style: AppTheme.display(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.7,
+                        color: scheme.onSurface)),
+                const SizedBox(height: 4),
+                Text(
+                  'Here is what is happening on campus',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: scheme.onSurface.withValues(alpha: 0.5)),
                 ),
-                const SizedBox(height: 12),
-                if (_todayEvents.isEmpty)
-                  Text('No events scheduled for today',
-                      style: TextStyle(
-                          fontSize: 12.5,
-                          color: scheme.onSurface.withValues(alpha: 0.45)))
-                else
-                  ..._todayEvents.map((e) {
-                    final type = (e['type'] as String?) ?? 'event';
-                    final color = AppColors.eventTypeColor(type);
-                    final date = toDate(e['date']);
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: color.withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline_rounded,
-                              size: 15, color: color),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text.rich(
-                              TextSpan(children: [
-                                TextSpan(
-                                  text: AppColors.eventTypeLabel(type),
-                                  style: TextStyle(
-                                      color: color,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12.5),
-                                ),
-                                TextSpan(
-                                  text: ' — ${e['title'] ?? ''}',
-                                  style: const TextStyle(fontSize: 12.5),
-                                ),
-                              ]),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (date != null)
-                            Text(formatTime(date),
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: scheme.onSurface
-                                        .withValues(alpha: 0.45))),
-                        ],
-                      ),
-                    );
-                  }),
               ],
             ),
+          ),
+          const SizedBox(height: 18),
+
+          // ── Today's events → Calendar (ink hero card) ──
+          FadeSlideIn(
+            delay: const Duration(milliseconds: 60),
+            child: Builder(builder: (context) {
+              final brightness = Theme.of(context).brightness;
+              final fg = AppColors.onGlossy(brightness);
+              final fgMuted = fg.withValues(alpha: 0.55);
+              return PressableScale(
+                onTap: () => widget.onNavigate('calendar'),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.glossy(brightness),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: fg.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            child: Icon(Icons.calendar_today_outlined,
+                                size: 14, color: fg),
+                          ),
+                          const SizedBox(width: 10),
+                          Text("Today's Events",
+                              style: AppTheme.display(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: fg)),
+                          const SizedBox(width: 8),
+                          Text(formatDayDate(DateTime.now()),
+                              style:
+                                  TextStyle(fontSize: 11, color: fgMuted)),
+                          const Spacer(),
+                          Icon(Icons.chevron_right_rounded,
+                              size: 18, color: fgMuted),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (_todayEvents.isEmpty)
+                        Text('No events scheduled for today',
+                            style:
+                                TextStyle(fontSize: 12.5, color: fgMuted))
+                      else
+                        ..._todayEvents.map((e) {
+                          final type = (e['type'] as String?) ?? 'event';
+                          final color = AppColors.eventTypeColor(type);
+                          final date = toDate(e['date']);
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: fg.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.circle, size: 8, color: color),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text.rich(
+                                    TextSpan(children: [
+                                      TextSpan(
+                                        text:
+                                            AppColors.eventTypeLabel(type),
+                                        style: TextStyle(
+                                            color: fg,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 12.5),
+                                      ),
+                                      TextSpan(
+                                        text: ' — ${e['title'] ?? ''}',
+                                        style: TextStyle(
+                                            fontSize: 12.5, color: fg),
+                                      ),
+                                    ]),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (date != null)
+                                  Text(formatTime(date),
+                                      style: TextStyle(
+                                          fontSize: 11, color: fgMuted)),
+                              ],
+                            ),
+                          );
+                        }),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ),
           const SizedBox(height: 18),
 
@@ -354,33 +398,42 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   'Events and opportunities from your placement cell appear here',
             )
           else
-            ..._feed.map((item) => Padding(
+            ..._feed.indexed.map((entry) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: EventPostCard(
-                    eventId: item.id,
-                    data: item.data,
-                    source: item.source,
-                    trending: _trendingKeys.contains(item.key),
-                    saved: _savedIds.containsKey(item.key),
-                    saving: _savingIds.contains(item.key),
-                    onToggleSave: () => _toggleSave(item),
-                    applied: item.source == 'event' &&
-                        _appliedEventIds.contains(item.id),
-                    onNavigate: widget.onNavigate,
-                    onOpenDetail: item.source == 'internship'
-                        ? () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => InternshipDetailScreen(
-                                    internshipId: item.id),
-                              ),
-                            )
-                        : null,
-                  ),
+                  child: _buildFeedCard(entry.$1, entry.$2),
                 )),
           const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+
+  Widget _buildFeedCard(int index, _FeedItem item) {
+    final card = EventPostCard(
+      eventId: item.id,
+      data: item.data,
+      source: item.source,
+      trending: _trendingKeys.contains(item.key),
+      saved: _savedIds.containsKey(item.key),
+      saving: _savingIds.contains(item.key),
+      onToggleSave: () => _toggleSave(item),
+      applied: item.source == 'event' && _appliedEventIds.contains(item.id),
+      onNavigate: widget.onNavigate,
+      onOpenDetail: item.source == 'internship'
+          ? () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      InternshipDetailScreen(internshipId: item.id),
+                ),
+              )
+          : null,
+    );
+    // Stagger only the first few cards so refreshes stay snappy.
+    if (index > 5) return card;
+    return FadeSlideIn(
+      delay: Duration(milliseconds: 100 + index * 45),
+      child: card,
     );
   }
 }

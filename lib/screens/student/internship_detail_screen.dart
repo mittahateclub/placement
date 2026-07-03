@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../core/format.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common.dart';
@@ -102,16 +103,18 @@ class _InternshipDetailScreenState extends State<InternshipDetailScreen> {
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
+                                  horizontal: 10, vertical: 4.5),
                               decoration: BoxDecoration(
-                                color: AppColors.accent,
-                                borderRadius: BorderRadius.circular(6),
+                                gradient: AppColors.glossy(
+                                    Theme.of(context).brightness),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 ((_internship!['companyName'] as String?) ?? '')
                                     .toUpperCase(),
-                                style: const TextStyle(
-                                    color: Colors.white,
+                                style: TextStyle(
+                                    color: AppColors.onGlossy(
+                                        Theme.of(context).brightness),
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 0.8),
@@ -120,10 +123,10 @@ class _InternshipDetailScreenState extends State<InternshipDetailScreen> {
                             const SizedBox(height: 12),
                             Text(
                               (_internship!['role'] as String?) ?? 'Internship',
-                              style: const TextStyle(
-                                  fontSize: 21,
+                              style: AppTheme.display(
+                                  fontSize: 24,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.4),
+                                  color: scheme.onSurface),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -233,9 +236,11 @@ class _InternshipDetailScreenState extends State<InternshipDetailScreen> {
                           ),
                         )
                       else
-                        FilledButton(
+                        GradientButton(
+                          label: 'Apply Now',
+                          icon: Icons.send_rounded,
+                          loading: _applying,
                           onPressed: _applying ? null : _apply,
-                          child: Text(_applying ? 'PROCESSING…' : 'APPLY NOW'),
                         ),
                       const SizedBox(height: 24),
                     ],
@@ -271,8 +276,8 @@ class _InfoTile extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 13.5,
-              fontWeight: FontWeight.w600,
-              color: accent ? AppColors.accent : null,
+              fontWeight: accent ? FontWeight.w700 : FontWeight.w600,
+              color: accent ? AppColors.amber : null,
             ),
           ),
         ],

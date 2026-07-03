@@ -189,11 +189,12 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 18),
-                FilledButton(
+                GradientButton(
+                  label: 'Complete Registration',
+                  icon: Icons.person_add_alt_1_rounded,
+                  loading: _submitting,
                   onPressed:
                       (_submitting || auth.universityId == null) ? null : _submit,
-                  child: Text(
-                      _submitting ? 'REGISTERING…' : 'COMPLETE REGISTRATION'),
                 ),
               ],
             ),

@@ -155,40 +155,35 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
 
           // ── Upload dropzone ──
           Material(
-            color: scheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(14),
+            color: scheme.surfaceContainerLow.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(20),
             child: InkWell(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(20),
               onTap: _uploading ? null : _uploadExisting,
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.blue.withValues(alpha: 0.4),
+                    color: AppColors.accent.withValues(alpha: 0.35),
                     width: 1.4,
                   ),
                 ),
                 child: Column(
                   children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainer,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: scheme.outline),
-                      ),
-                      child: _uploading
-                          ? const Padding(
-                              padding: EdgeInsets.all(14),
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2.5))
-                          : Icon(Icons.upload_rounded,
-                              size: 22,
-                              color: scheme.onSurface.withValues(alpha: 0.6)),
-                    ),
+                    _uploading
+                        ? const SizedBox(
+                            width: 54,
+                            height: 54,
+                            child: Padding(
+                                padding: EdgeInsets.all(14),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2.5)))
+                        : const GlossyIconChip(
+                            icon: Icons.upload_rounded,
+                            size: 54,
+                            iconSize: 22),
                     const SizedBox(height: 10),
                     Text(
                       _uploading
@@ -230,7 +225,7 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
                   const SizedBox(height: 16),
                   FilledButton(
                     onPressed: () => widget.onNavigate('resume-builder'),
-                    child: const Text('GO TO BUILDER'),
+                    child: const Text('Go to Builder'),
                   ),
                 ],
               ),

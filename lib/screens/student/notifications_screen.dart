@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_theme.dart';
 import '../../core/format.dart';
 import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
@@ -187,15 +188,17 @@ class _ReminderToggle extends StatelessWidget {
               const Icon(Icons.notifications_active_outlined,
                   size: 18, color: AppColors.accent),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Reminders',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w800)),
-                    SizedBox(height: 2),
-                    Text(
+                        style: AppTheme.display(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface)),
+                    const SizedBox(height: 2),
+                    const Text(
                       'Get a heads-up before tests, events and deadlines.',
                       style: TextStyle(fontSize: 11.5, height: 1.3),
                     ),

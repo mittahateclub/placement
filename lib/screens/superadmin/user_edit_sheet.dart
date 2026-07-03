@@ -121,9 +121,8 @@ class _UserEditSheetState extends State<_UserEditSheet> {
           children: [
             Row(
               children: [
-                const Text('Edit Account',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                Text('Edit Account',
+                    style: Theme.of(context).textTheme.headlineSmall),
                 const Spacer(),
                 IconButton(
                   visualDensity: VisualDensity.compact,
@@ -179,9 +178,11 @@ class _UserEditSheetState extends State<_UserEditSheet> {
               onChanged: (v) => setState(() => _verified = v),
             ),
             const SizedBox(height: 8),
-            FilledButton(
+            GradientButton(
+              label: 'Save Changes',
+              icon: Icons.check_rounded,
+              loading: _saving,
               onPressed: _saving ? null : _save,
-              child: Text(_saving ? 'SAVING…' : 'SAVE CHANGES'),
             ),
           ],
         ),
