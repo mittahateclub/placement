@@ -64,13 +64,12 @@ class _MyResumesScreenState extends State<MyResumesScreen> {
     final user = context.read<AuthService>().user;
     if (user == null || user.email == null) return;
 
-    final picked = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'doc', 'docx'],
     );
-    final file = picked?.files.single;
     if (file == null || file.path == null) return;
-    if (file.size > 6 * 1024 * 1024) {
+    if ((await file.length() ?? 0) > 6 * 1024 * 1024) {
       if (mounted) {
         showAppSnack(context, 'File size must be under 6MB.', error: true);
       }

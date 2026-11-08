@@ -98,8 +98,8 @@ class NotificationService {
     if (_ready) return;
     try {
       tzdata.initializeTimeZones();
-      final name = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(name));
+      final zone = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(zone.identifier));
     } catch (_) {
       // Falls back to the package default location; reminders still fire,
       // just interpreted in UTC if the device zone can't be resolved.
@@ -118,7 +118,8 @@ class NotificationService {
       requestSoundPermission: false,
     );
     await _plugin.initialize(
-      const InitializationSettings(android: androidInit, iOS: darwinInit),
+      settings:
+          const InitializationSettings(android: androidInit, iOS: darwinInit),
       onDidReceiveNotificationResponse: _onTap,
       onDidReceiveBackgroundNotificationResponse: _onTapBackground,
     );
@@ -636,12 +637,22 @@ class NotificationService {
   static Future<void> _scheduleAt(int id, tz.TZDateTime when, String title,
       String body, String? payload) async {
     try {
-      await _plugin.zonedSchedule(id, title, body, when, _details,
+      await _plugin.zonedSchedule(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: when,
+          notificationDetails: _details,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           payload: payload);
     } catch (_) {
       try {
-        await _plugin.zonedSchedule(id, title, body, when, _details,
+        await _plugin.zonedSchedule(
+            id: id,
+            title: title,
+            body: body,
+            scheduledDate: when,
+            notificationDetails: _details,
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
             payload: payload);
       } catch (_) {
@@ -653,7 +664,12 @@ class NotificationService {
   static Future<void> _show(
       int id, String title, String body, String? payload) async {
     try {
-      await _plugin.show(id, title, body, _details, payload: payload);
+      await _plugin.show(
+          id: id,
+          title: title,
+          body: body,
+          notificationDetails: _details,
+          payload: payload);
     } catch (_) {}
   }
 

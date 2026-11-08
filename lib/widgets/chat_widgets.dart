@@ -315,14 +315,13 @@ class _ChatComposerState extends State<ChatComposer> {
   }
 
   Future<void> _attach() async {
-    final picked = await FilePicker.pickFiles(
-      withData: true,
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'],
     );
-    final file = picked?.files.firstOrNull;
-    if (file == null || file.bytes == null) return;
-    if (file.size > 6 * 1024 * 1024) {
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    if (bytes.length > 6 * 1024 * 1024) {
       if (mounted) {
         showAppSnack(context, 'File must be under 6 MB.', error: true);
       }
@@ -331,7 +330,7 @@ class _ChatComposerState extends State<ChatComposer> {
     setState(() => _sending = true);
     try {
       await widget.onSend(_controller.text.trim(),
-          fileBytes: file.bytes, fileName: file.name, internal: _internal);
+          fileBytes: bytes, fileName: file.name, internal: _internal);
       _controller.clear();
     } catch (_) {
       if (mounted) {
